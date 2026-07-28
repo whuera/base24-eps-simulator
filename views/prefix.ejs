@@ -1,0 +1,99 @@
+<%- include('partials/top') %>
+<% const s = sel || {}; %>
+<div class="mdi-window" style="max-width:660px">
+  <div class="mdi-title"><span class="ico">🔢</span> <%= s.prefix_type==='System'?'System':'On-Us' %> Prefix Configuration<%= s.prefix ? ' - ' + s.prefix : '' %>
+    <span class="spacer"></span>
+    <span class="mini-win">_</span><span class="mini-win">▢</span><span class="mini-win close">✕</span>
+  </div>
+  <div class="mdi-toolbar">
+    <a class="tb" href="/prefix" title="Nuevo">🗋</a>
+    <span class="tb" title="Guardar" onclick="document.forms.pfxForm.submit()">💾</span>
+    <form method="post" action="/prefix/delete" style="display:inline" onsubmit="return confirm('¿Eliminar prefix?')">
+      <input type="hidden" name="id" value="<%= s.id %>">
+      <button class="tb" title="Eliminar" style="border:none;background:none">🗑</button>
+    </form>
+  </div>
+
+  <form method="post" action="/prefix" name="pfxForm">
+  <input type="hidden" name="id" value="<%= s.id||'' %>">
+  <div class="mdi-body">
+    <div class="form-row">
+      <label>Prefix</label>
+      <input class="med" type="text" name="prefix" value="<%= s.prefix||'' %>">
+      <label style="min-width:75px">PAN Length</label>
+      <input class="short" type="text" name="pan_length" value="<%= s.pan_length||16 %>">
+      <select class="med" onchange="location.href='/prefix?id='+this.value">
+        <option value="">— abrir —</option>
+        <% list.forEach(function(p){ %>
+          <option value="<%= p.id %>" <%= s.id==p.id?'selected':'' %>><%= p.prefix %> (<%= p.prefix_type %>)</option>
+        <% }); %>
+      </select>
+    </div>
+    <div class="form-row req">
+      <label>Issuer ID</label>
+      <select class="long" name="issuer_id">
+        <% issuers.forEach(function(i){ %>
+          <option value="<%= i.institution_id %>" <%= s.issuer_id===i.institution_id?'selected':'' %>><%= i.institution_id %> (<%= i.institution_name %>)</option>
+        <% }); %>
+      </select>
+      <label style="min-width:70px">Prefix Type</label>
+      <select class="med" name="prefix_type">
+        <% ['On-Us','System','Not-On-Us'].forEach(function(t){ %><option <%= s.prefix_type===t?'selected':'' %>><%= t %></option><% }); %>
+      </select>
+    </div>
+
+    <div class="tabstrip">
+      <a href="#" class="disabled">Card Verification</a>
+      <a href="#" class="disabled">Dynamic Card Verification</a>
+      <a href="#" class="disabled">EMV General Options</a>
+      <a href="#" class="disabled">EMV Auth Options</a>
+      <a href="#" class="disabled">CAVV</a>
+    </div>
+    <div class="tabstrip" style="margin-top:0">
+      <a href="#" class="active">Processing Information</a>
+      <a href="#" class="disabled">Check Processing</a>
+      <a href="#" class="disabled">Issuer Information</a>
+      <a href="#" class="disabled">Card Track Information</a>
+      <a href="#" class="disabled">PIN Verification</a>
+    </div>
+
+    <div class="tab-pane">
+      <div style="display:flex; gap:16px">
+        <div style="flex:1">
+          <div class="form-row" style="margin-bottom:8px">
+            <label style="min-width:0"><input type="checkbox" name="member_number_on_track" <%= s.member_number_on_track?'checked':'' %>> Member Number on Track</label>
+          </div>
+          <div class="form-row" style="margin-bottom:8px">
+            <label style="min-width:0"><input type="checkbox" name="include_holds" <%= s.include_holds?'checked':'' %>> Include Holds When Checking Limits, Usages and Balances</label>
+          </div>
+          <div class="form-row"><label>Expiration Date Check Option</label>
+            <select class="med" name="expiration_check_option">
+              <% ['{none}','Warning','Required'].forEach(function(o){ %><option <%= s.expiration_check_option===o?'selected':'' %>><%= o %></option><% }); %>
+            </select>
+          </div>
+          <div class="form-row"><label>Fraud System Option</label>
+            <select class="med" name="fraud_option">
+              <% ['Do Not Use Fraud System','Use Fraud System'].forEach(function(o){ %><option <%= s.fraud_option===o?'selected':'' %>><%= o %></option><% }); %>
+            </select>
+          </div>
+          <div class="form-row"><label>Maximum PIN Retry Count</label>
+            <input class="short" type="text" name="max_pin_retry" value="<%= s.max_pin_retry||3 %>"></div>
+        </div>
+        <fieldset class="group" style="width:230px; align-self:flex-start"><legend>Route Type</legend>
+          <div class="form-row" style="margin-bottom:6px"><label style="min-width:0">
+            <input type="radio" name="route_type" value="Acquirer and Issuer" <%= s.route_type!=='Issuer only'?'checked':'' %>> Acquirer and Issuer</label></div>
+          <div class="form-row"><label style="min-width:0">
+            <input type="radio" name="route_type" value="Issuer only" <%= s.route_type==='Issuer only'?'checked':'' %>> Issuer only</label></div>
+        </fieldset>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" type="submit">Guardar</button>
+        <a class="btn" href="/prefix">Nuevo</a>
+      </div>
+    </div>
+  </div>
+  </form>
+  <div class="mdi-status"><span class="ico">ℹ️</span> <%= s.prefix ? '260 - Desktop bounds(0,0,1022,718) — prefix ' + s.prefix : 'Ready' %></div>
+</div>
+<%- include('partials/bottom') %>

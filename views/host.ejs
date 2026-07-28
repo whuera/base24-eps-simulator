@@ -1,0 +1,94 @@
+<%- include('partials/top') %>
+<% const s = sel || {}; %>
+<div class="mdi-window" style="max-width:640px">
+  <div class="mdi-title"><span class="ico">🖧</span> <%= (s.kind==='Host'?'Host':'VisaNet ISO') %> Interface Configuration<%= s.interface_name ? ' - ' + s.interface_name : '' %>
+    <span class="spacer"></span>
+    <span class="mini-win">_</span><span class="mini-win">▢</span><span class="mini-win close">✕</span>
+  </div>
+  <div class="mdi-toolbar">
+    <a class="tb" href="/host" title="Nuevo">🗋</a>
+    <span class="tb" title="Guardar" onclick="document.forms.hostForm.submit()">💾</span>
+    <form method="post" action="/host/delete" style="display:inline" onsubmit="return confirm('¿Eliminar <%= s.interface_name %>?')">
+      <input type="hidden" name="interface_name" value="<%= s.interface_name %>">
+      <button class="tb" title="Eliminar" style="border:none;background:none">🗑</button>
+    </form>
+    <span class="tb" title="Key">🔑</span>
+  </div>
+
+  <form method="post" action="/host" name="hostForm">
+  <div class="mdi-body">
+    <div class="form-row req">
+      <label>Interface Name</label>
+      <input class="long" type="text" name="interface_name" value="<%= s.interface_name||'' %>">
+      <select class="med" onchange="location.href='/host?name='+this.value">
+        <option value="">— seleccionar —</option>
+        <% list.forEach(function(h){ %>
+          <option value="<%= h.interface_name %>" <%= s.interface_name===h.interface_name?'selected':'' %>><%= h.interface_name %></option>
+        <% }); %>
+      </select>
+      <label style="min-width:40px">Kind</label>
+      <select class="med" name="kind">
+        <% ['Interchange','Host'].forEach(function(k){ %><option <%= s.kind===k?'selected':'' %>><%= k %></option><% }); %>
+      </select>
+    </div>
+
+    <div class="tabstrip">
+      <a class="active" href="#">Processing</a>
+      <a class="disabled" href="#">Holidays</a>
+      <a class="disabled" href="#">Key Management</a>
+      <a class="disabled" href="#">Message Management</a>
+      <a class="disabled" href="#">Store and Forward (SAF)</a>
+      <a class="disabled" href="#">Station(s)</a>
+      <a class="disabled" href="#">Default Values</a>
+      <a class="disabled" href="#">Visa</a>
+    </div>
+
+    <div class="tab-pane">
+      <div class="form-row">
+        <label>Interface Cutover Time</label><input class="short" type="text" name="cutover_time" value="<%= s.cutover_time||'' %>">
+        <label style="min-width:170px">Time Offset From Processor (hrs:mins)</label>
+        <input class="short" type="text" name="time_offset" value="<%= s.time_offset||'' %>">
+      </div>
+      <div class="form-row">
+        <label>Statistics Update Interval</label><input class="short" type="text" name="statistics_interval" value="<%= s.statistics_interval||0 %>">
+      </div>
+
+      <fieldset class="group"><legend>Settlement Processing Days</legend>
+        <div class="form-row" style="gap:18px">
+          <label style="min-width:0"><input type="radio" name="settlement_days" value="5-Day" <%= s.settlement_days==='5-Day'?'checked':'' %>> 5-Day (Business Day)</label>
+          <label style="min-width:0"><input type="radio" name="settlement_days" value="7-Day" <%= s.settlement_days!=='5-Day'?'checked':'' %>> 7-Day</label>
+        </div>
+      </fieldset>
+
+      <fieldset class="group"><legend>Interface Profiles</legend>
+        <% function prof(label,name,val){ %>
+          <div class="form-row req"><label style="min-width:200px"><%= label %></label>
+            <input class="long" type="text" name="<%= name %>" value="<%= val||'' %>"></div>
+        <% } %>
+        <div class="form-row req"><label style="min-width:200px">Source Routing Profile</label>
+          <select class="long" name="source_routing_profile">
+            <option value="">*******************</option>
+            <% profiles.forEach(function(p){ %><option <%= s.source_routing_profile===p?'selected':'' %>><%= p %></option><% }); %>
+          </select>
+        </div>
+        <% prof('Acquirer Transactions Allowed Profile','acquirer_txn_profile',s.acquirer_txn_profile) %>
+        <% prof('Issuer Transactions Allowed Profile','issuer_txn_profile',s.issuer_txn_profile) %>
+        <% prof('Context Profile','context_profile',s.context_profile) %>
+        <% prof('ISO Message Profile','iso_message_profile',s.iso_message_profile) %>
+        <% prof('Action Code Profile','action_code_profile',s.action_code_profile) %>
+        <div class="form-row"><label style="min-width:200px">Acquirer Surcharge Profile</label>
+          <input class="long" type="text" name="acquirer_surcharge_profile" value="<%= s.acquirer_surcharge_profile||'' %>"></div>
+        <div class="form-row"><label style="min-width:200px">Currency Conversion Fee Profile</label>
+          <input class="long" type="text" name="currency_conversion_fee_profile" value="<%= s.currency_conversion_fee_profile||'' %>"></div>
+      </fieldset>
+
+      <div class="actions">
+        <button class="btn primary" type="submit">Guardar</button>
+        <a class="btn" href="/host">Nuevo</a>
+      </div>
+    </div>
+  </div>
+  </form>
+  <div class="mdi-status"><span class="ico">ℹ️</span> <%= s.interface_name ? '2 - Successful view of ' + s.interface_name + '.' : 'Ready' %></div>
+</div>
+<%- include('partials/bottom') %>

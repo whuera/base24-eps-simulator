@@ -1,0 +1,96 @@
+<%- include('partials/top') %>
+<% const s = sel || {}; %>
+<div class="mdi-window">
+  <div class="mdi-title"><span class="ico">🏦</span> Institution Configuration<%= s.institution_id ? ' - ' + s.institution_id : '' %>
+    <span class="spacer"></span>
+    <span class="mini-win">_</span><span class="mini-win">▢</span><span class="mini-win close">✕</span>
+  </div>
+  <div class="mdi-toolbar">
+    <a class="tb" href="/institution" title="Nuevo (limpiar)">🗋</a>
+    <span class="tb" title="Guardar" onclick="document.forms.instForm.submit()">💾</span>
+    <form method="post" action="/institution/delete" style="display:inline" onsubmit="return confirm('¿Eliminar <%= s.institution_id %>?')">
+      <input type="hidden" name="institution_id" value="<%= s.institution_id %>">
+      <button class="tb" title="Eliminar" style="border:none;background:none">🗑</button>
+    </form>
+    <span class="tb" title="Imprimir">🖨</span>
+    <span class="tb" title="Refrescar">🔃</span>
+  </div>
+
+  <form method="post" action="/institution" name="instForm">
+  <div class="mdi-body">
+    <div class="form-row">
+      <label>Institution ID</label>
+      <input class="med" type="text" name="institution_id" value="<%= s.institution_id || '' %>">
+      <select class="med" onchange="location.href='/institution?id='+this.value">
+        <option value="">— seleccionar —</option>
+        <% list.forEach(function(i){ %>
+          <option value="<%= i.institution_id %>" <%= s.institution_id===i.institution_id?'selected':'' %>><%= i.institution_id %></option>
+        <% }); %>
+      </select>
+      <label style="min-width:60px">Issuer Type</label>
+      <select class="med" name="issuer_type">
+        <% ['Institution','Host','Interchange'].forEach(function(t){ %>
+          <option <%= s.issuer_type===t?'selected':'' %>><%= t %></option>
+        <% }); %>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>Institution Number</label>
+      <input class="med" type="text" name="institution_number" value="<%= s.institution_number || '' %>">
+      <label style="min-width:95px">Institution Name</label>
+      <input class="long" type="text" name="institution_name" value="<%= s.institution_name || '' %>">
+    </div>
+
+    <div class="tabstrip">
+      <a class="<%= tab==='address'?'active':'' %>" href="/institution?id=<%= s.institution_id %>&tab=address">Address and Contacts</a>
+      <a class="<%= tab==='locale'?'active':'' %>" href="/institution?id=<%= s.institution_id %>&tab=locale">Address and Contacts (Locale)</a>
+      <a class="<%= tab==='settings'?'active':'' %>" href="/institution?id=<%= s.institution_id %>&tab=settings">Settings</a>
+      <a class="disabled" href="#">Holidays</a>
+    </div>
+
+    <div class="tab-pane">
+      <% if (tab==='settings') { %>
+        <fieldset class="group"><legend>Settings</legend>
+          <div class="form-row"><label>Timezone</label><input class="med" type="text" value="(GMT-06:00) Central"></div>
+          <div class="form-row"><label>Default Currency</label><input class="short" type="text" value="840"></div>
+          <div class="form-row"><label>Statement Cycle</label><input class="short" type="text" value="Monthly"></div>
+          <p class="hint">Pestaña ilustrativa. Los campos de dirección se guardan en la pestaña principal.</p>
+        </fieldset>
+      <% } else if (tab==='locale') { %>
+        <fieldset class="group"><legend>Address Information (Locale)</legend>
+          <p class="hint">Soporte de internacionalización (alfabetos y juegos de caracteres locales). Vista ilustrativa.</p>
+        </fieldset>
+      <% } else { %>
+        <fieldset class="group"><legend>Address Information</legend>
+          <div class="form-row"><label>Line 1</label><input class="long" type="text" name="addr_line1" value="<%= s.addr_line1||'' %>"></div>
+          <div class="form-row"><label>Line 2</label><input class="long" type="text" name="addr_line2" value="<%= s.addr_line2||'' %>"></div>
+          <div class="form-row">
+            <label>City</label><input class="med" type="text" name="city" value="<%= s.city||'' %>">
+            <label style="min-width:60px">Country</label><input class="med" type="text" name="country" value="<%= s.country||'' %>">
+          </div>
+          <div class="form-row">
+            <label>Postal Code</label><input class="med" type="text" name="postal_code" value="<%= s.postal_code||'' %>">
+            <label style="min-width:80px">State / Province</label><input class="med" type="text" name="state_province" value="<%= s.state_province||'' %>">
+          </div>
+        </fieldset>
+        <fieldset class="group"><legend>Contact Information</legend>
+          <table class="grid">
+            <tr><th>Contact</th><th>Phone</th><th>Email</th><th>Comments</th></tr>
+            <% if (contacts.length===0){ %><tr><td colspan="4" style="color:#888">(sin contactos)</td></tr><% } %>
+            <% contacts.forEach(function(c){ %>
+              <tr><td><%= c.contact %></td><td><%= c.phone %></td><td><%= c.email %></td><td><%= c.comments %></td></tr>
+            <% }); %>
+          </table>
+        </fieldset>
+      <% } %>
+    </div>
+
+    <div class="actions">
+      <button class="btn primary" type="submit">Guardar</button>
+      <a class="btn" href="/institution">Nuevo</a>
+    </div>
+  </div>
+  </form>
+  <div class="mdi-status"><span class="ico">ℹ️</span> <%= s.status_msg || 'Ready' %></div>
+</div>
+<%- include('partials/bottom') %>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title><%= title %> — BASE24-eps Simulator</title>
+  <link rel="stylesheet" href="/static/css/base24.css">
+</head>
+<body>
+<div class="app-window">
+  <div class="app-titlebar">
+    <span class="aci-logo">Mobilpymes</span>
+    <span>EPS Development - ESNCService</span>
+    <span class="spacer"></span>
+    <span class="winbtn">_</span>
+    <span class="winbtn">▢</span>
+    <span class="winbtn close">✕</span>
+  </div>
+
+  <div class="menubar">
+    <% const links = {
+         'File':'/', 'Configure':'/institution', 'System Operations':'/simulator',
+         'Customer Management':'/', 'Edit':'#', 'View':'#', 'Window':'#', 'Help':'#'
+       }; %>
+    <% menus.forEach(function(m){ %>
+      <a class="mi" href="<%= links[m] || '#' %>"><%- m.replace(/^(.)/, '<u>$1</u>') %></a>
+    <% }); %>
+  </div>
+
+  <div class="toolbar">
+    <a class="tb" href="/institution" title="Institution">🏦</a>
+    <a class="tb" href="/host" title="Host / Interchange">🖧</a>
+    <a class="tb" href="/prefix" title="Prefix">🔢</a>
+    <a class="tb" href="/routing" title="Routing">🔀</a>
+    <span class="sep"></span>
+    <a class="tb" href="/simulator" title="Transaction Simulator">▶</a>
+    <span class="sep"></span>
+    <a class="tb" href="/" title="Desktop">🏠</a>
+  </div>
+
+  <div class="mdi">

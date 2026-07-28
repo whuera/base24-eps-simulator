@@ -1,0 +1,81 @@
+<%- include('partials/top') %>
+<% const s = sel || {}; %>
+<div class="mdi-window" style="max-width:720px">
+  <div class="mdi-title"><span class="ico">🔀</span> System Routing Configuration<%= s.name ? ' - ' + s.name : '' %>
+    <span class="spacer"></span>
+    <span class="mini-win">_</span><span class="mini-win">▢</span><span class="mini-win close">✕</span>
+  </div>
+  <div class="mdi-toolbar">
+    <a class="tb" href="/routing" title="Nuevo">🗋</a>
+    <span class="tb" title="Guardar" onclick="document.forms.rpForm.submit()">💾</span>
+    <span class="tb" title="Subir">▲</span><span class="tb" title="Bajar">▼</span>
+  </div>
+
+  <div class="mdi-body">
+    <form method="post" action="/routing" name="rpForm">
+      <input type="hidden" name="id" value="<%= s.id||'' %>">
+      <div class="form-row req">
+        <label>Source Routing Profile</label>
+        <input class="long" type="text" name="name" value="<%= s.name||'' %>">
+        <select class="med" onchange="location.href='/routing?id='+this.value">
+          <option value="">— abrir —</option>
+          <% list.forEach(function(p){ %>
+            <option value="<%= p.id %>" <%= s.id==p.id?'selected':'' %>><%= p.name %></option>
+          <% }); %>
+        </select>
+        <button class="btn" type="submit">Guardar perfil</button>
+      </div>
+    </form>
+
+    <table class="grid">
+      <tr>
+        <th>Destination Routing Profile</th><th>Issuer ID</th><th>Limit Profile</th>
+        <th>Issuer Surcharge Profile</th><th>Instrument Type</th><th>Route Type</th><th></th>
+      </tr>
+      <% (dests||[]).forEach(function(d){ %>
+        <tr>
+          <td><%= d.destination_routing_profile %></td>
+          <td><%= d.issuer_id || '—' %></td>
+          <td><%= d.limit_profile %></td>
+          <td><%= d.issuer_surcharge_profile || '—' %></td>
+          <td><%= d.instrument_type %></td>
+          <td><%= d.route_type %></td>
+          <td>
+            <form method="post" action="/routing/destination/delete" onsubmit="return confirm('¿Eliminar fila?')">
+              <input type="hidden" name="id" value="<%= d.id %>">
+              <button class="btn danger" style="padding:1px 6px">✕</button>
+            </form>
+          </td>
+        </tr>
+      <% }); %>
+      <% if (s.id) { %>
+      <form method="post" action="/routing/destination">
+        <input type="hidden" name="profile_ref" value="<%= s.id %>">
+        <tr style="background:#f7f9fc">
+          <td><select name="destination_routing_profile" style="width:100%">
+            <% hosts.forEach(function(h){ %><option><%= h %></option><% }); %>
+          </select></td>
+          <td><select name="issuer_id" style="width:100%"><option value="">(cualquiera)</option>
+            <% issuers.forEach(function(i){ %><option><%= i %></option><% }); %>
+          </select></td>
+          <td><select name="limit_profile" style="width:100%">
+            <% limits.forEach(function(l){ %><option><%= l %></option><% }); %>
+          </select></td>
+          <td><input type="text" name="issuer_surcharge_profile" style="width:100%"></td>
+          <td><select name="instrument_type" style="width:100%">
+            <% ['ATM','POS','Any'].forEach(function(t){ %><option><%= t %></option><% }); %>
+          </select></td>
+          <td><select name="route_type" style="width:100%">
+            <% ['Acquirer & Issuer','Issuer only'].forEach(function(t){ %><option><%= t %></option><% }); %>
+          </select></td>
+          <td><button class="btn primary" style="padding:1px 6px">＋</button></td>
+        </tr>
+      </form>
+      <% } %>
+    </table>
+    <p class="hint">Cada fila es un destino evaluado en orden. El motor de transacciones elige el
+    primer destino cuyo <b>Instrument Type</b> e <b>Issuer ID</b> coincidan con la transacción.</p>
+  </div>
+  <div class="mdi-status"><span class="ico">ℹ️</span> <%= s.name ? '2 - Successful view of ' + s.name + '.' : 'Ready' %></div>
+</div>
+<%- include('partials/bottom') %>

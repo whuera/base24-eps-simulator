@@ -1,0 +1,73 @@
+<%- include('partials/top') %>
+<% const f = form || {}; %>
+<div class="mdi-window" style="max-width:680px">
+  <div class="mdi-title"><span class="ico">▶️</span> Transaction Simulator
+    <span class="spacer"></span>
+    <span class="mini-win">_</span><span class="mini-win">▢</span><span class="mini-win close">✕</span>
+  </div>
+  <div class="mdi-body">
+    <form method="post" action="/simulator">
+      <fieldset class="group"><legend>Transaction Request</legend>
+        <div class="form-row">
+          <label>PAN (número de tarjeta)</label>
+          <input class="long" type="text" name="pan" value="<%= f.pan||'' %>">
+        </div>
+        <div class="form-row">
+          <label>Amount</label><input class="short" type="text" name="amount" value="<%= f.amount||'' %>">
+          <label style="min-width:70px">Txn Type</label>
+          <select class="med" name="txn_type">
+            <% ['Withdrawal','Purchase','Balance Inquiry','Transfer'].forEach(function(t){ %>
+              <option <%= f.txn_type===t?'selected':'' %>><%= t %></option><% }); %>
+          </select>
+          <label style="min-width:50px">Source</label>
+          <select class="med" name="source">
+            <% ['ATM','POS','Interchange'].forEach(function(t){ %>
+              <option <%= f.source===t?'selected':'' %>><%= t %></option><% }); %>
+          </select>
+        </div>
+        <div class="actions">
+          <button class="btn primary" type="submit">Autorizar ▶</button>
+          <span class="hint" style="margin-left:8px">Prefijos cargados:
+            <% prefixes.forEach(function(p){ %><span class="pill"><%= p.prefix %> · <%= p.prefix_type %></span><% }); %>
+          </span>
+        </div>
+      </fieldset>
+    </form>
+
+    <% if (result) { %>
+      <fieldset class="group"><legend>Response — STAN <%= result.stan %></legend>
+        <p style="margin:2px 0 8px">
+          Resultado:
+          <span class="badge <%= result.approved?'ok':'no' %>"><%= result.action_code %> — <%= result.action_desc %></span>
+          &nbsp; <%= result.on_us ? 'On-Us' : 'Not-On-Us' %>
+          <% if (result.routed_to){ %>· ruteado a <b><%= result.routed_to %></b><% } %>
+          <% if (result.issuer_id){ %>· issuer <b><%= result.issuer_id %></b><% } %>
+        </p>
+        <div class="trace"><% result.steps.forEach(function(st){ %><%= st %>&#10;<% }); %></div>
+      </fieldset>
+    <% } %>
+
+    <fieldset class="group"><legend>Journal (últimas 50)</legend>
+      <table class="grid">
+        <tr><th>STAN</th><th>PAN</th><th>Monto</th><th>Tipo</th><th>Src</th><th>Prefix</th>
+            <th>Issuer</th><th>On-Us</th><th>Limit</th><th>Destino</th><th>Action</th><th>Fecha</th></tr>
+        <% if (journal.length===0){ %><tr><td colspan="12" style="color:#888">(journal vacío)</td></tr><% } %>
+        <% journal.forEach(function(j){ %>
+          <tr>
+            <td><%= j.stan %></td><td><%= j.pan %></td><td style="text-align:right"><%= j.amount.toFixed(2) %></td>
+            <td><%= j.txn_type %></td><td><%= j.source %></td><td><%= j.prefix_matched||'—' %></td>
+            <td><%= j.issuer_id||'—' %></td><td><%= j.on_us?'Sí':'No' %></td><td><%= j.limit_profile||'—' %></td>
+            <td><%= j.routed_to||'—' %></td>
+            <td><span class="badge <%= j.action_code==='00'?'ok':'no' %>" style="padding:0 5px"><%= j.action_code %></span></td>
+            <td><%= j.created_at %></td>
+          </tr>
+        <% }); %>
+      </table>
+      <form method="post" action="/simulator/clear" class="actions" onsubmit="return confirm('¿Vaciar journal?')">
+        <button class="btn danger">Vaciar journal</button>
+      </form>
+    </fieldset>
+  </div>
+  <div class="mdi-status"><span class="ico">ℹ️</span> System Operations — Transaction Simulator</div>
+</div>
+<%- include('partials/bottom') %>

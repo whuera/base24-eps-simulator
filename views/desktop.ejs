@@ -1,0 +1,44 @@
+<%- include('partials/top') %>
+
+<div class="launcher">
+  <a class="launch-ico" href="/institution">
+    <span class="glyph">🏦</span>
+    <span class="lbl">Institution<span class="cnt"><%= counts.institutions %> registros</span></span>
+  </a>
+  <a class="launch-ico" href="/host">
+    <span class="glyph">🖧</span>
+    <span class="lbl">Host / Interchange<span class="cnt"><%= counts.hosts %> interfaces</span></span>
+  </a>
+  <a class="launch-ico" href="/prefix">
+    <span class="glyph">🔢</span>
+    <span class="lbl">Prefix<span class="cnt"><%= counts.prefixes %> prefijos</span></span>
+  </a>
+  <a class="launch-ico" href="/routing">
+    <span class="glyph">🔀</span>
+    <span class="lbl">Routing<span class="cnt"><%= counts.routing %> perfiles</span></span>
+  </a>
+  <a class="launch-ico" href="/simulator">
+    <span class="glyph">▶️</span>
+    <span class="lbl">Simulator<span class="cnt"><%= counts.journal %> en journal</span></span>
+  </a>
+</div>
+
+<div class="mdi-window" style="max-width:560px">
+  <div class="mdi-title"><span class="ico">ℹ️</span> Welcome
+    <span class="spacer"></span>
+    <span class="mini-win">_</span><span class="mini-win">▢</span><span class="mini-win close">✕</span>
+  </div>
+  <div class="mdi-body">
+    <p style="margin-top:0"><b>Simulador ACI BASE24-eps</b> — réplica didáctica de la consola
+    <i>EPS Development - ESNCService</i>.</p>
+    <p>Usa el menú <b>Configure</b> o los iconos del escritorio para abrir cada módulo:
+    <b>Institution</b>, <b>Host/Interchange</b>, <b>Prefix</b> y <b>Routing</b>. Luego abre
+    <b>System Operations → Transaction Simulator</b> para lanzar transacciones y ver cómo el
+    switch busca el prefix, resuelve el issuer, aplica el limit profile y rutea a un destino.</p>
+    <p class="hint">Datos precargados de los manuales: Institution <b>BNK1</b> (FIRSTSTATEBANK),
+    interface <b>VISA_BASE1</b>, prefix <b>160107</b>, Source Routing Profile <b>STAR_SRC</b>.</p>
+  </div>
+  <div class="mdi-status"><span class="ico">ℹ️</span> Ready</div>
+</div>
+
+<%- include('partials/bottom') %>
