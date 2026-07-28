@@ -1,18 +1,6 @@
 'use strict';
 
-/*
- * Motor de simulacion de autorizacion/ruteo BASE24-eps (didactico).
- * Reproduce el flujo descrito en los manuales:
- *   1. Acquirer recibe la transaccion (ATM / POS / Interchange).
- *   2. Se extrae el prefijo del PAN y se busca el registro Prefix.
- *   3. Se resuelve el Issuer (Institution) y si es On-Us o Not-On-Us.
- *   4. Se aplica el Limit Profile.
- *   5. Routing: On-Us -> autorizador interno; Not-On-Us -> Source Routing
- *      Profile elige un destino Host/Interchange.
- *   6. Se genera un Action Code y se journaliza.
- */
-
-const db = require('./db/database');
+const { db } = require('./db/database');
 
 const ACTION_CODES = {
   '00': 'Approved',
@@ -24,41 +12,38 @@ const ACTION_CODES = {
   '91': 'Issuer or switch inoperative',
 };
 
-function findPrefix(pan) {
-  const rows = db.prepare('SELECT * FROM prefixes ORDER BY LENGTH(prefix) DESC').all();
+async function findPrefix(pan) {
+  const rows = await db.all('SELECT * FROM prefixes ORDER BY LENGTH(prefix) DESC');
   return rows.find((r) => pan.startsWith(r.prefix)) || null;
 }
 
-function todayTotals(issuerId) {
-  const row = db.prepare(`
-    SELECT COUNT(*) AS cnt, COALESCE(SUM(amount),0) AS sum
+async function todayTotals(issuerId) {
+  const row = await db.get(`
+    SELECT COUNT(*) AS cnt, COALESCE(SUM(amount), 0) AS sum
     FROM journal
-    WHERE issuer_id = ? AND action_code = '00'
-      AND date(created_at) = date('now')`).get(issuerId);
-  return { count: row.cnt, sum: row.sum };
+    WHERE issuer_id = $1 AND action_code = '00'
+      AND created_at::date = CURRENT_DATE`, [issuerId]);
+  return { count: Number(row.cnt), sum: Number(row.sum) };
 }
 
-function nextStan() {
-  const n = db.prepare('SELECT COUNT(*) AS n FROM journal').get().n + 1;
-  return String(n % 1000000).padStart(6, '0');
+async function nextStan() {
+  const row = await db.get('SELECT COUNT(*) AS n FROM journal');
+  return String((Number(row.n) + 1) % 1000000).padStart(6, '0');
 }
 
-/**
- * @param {{pan:string, amount:number, txn_type:string, source:string}} txn
- */
-function authorize(txn) {
+async function authorize(txn) {
   const steps = [];
-  const pan = String(txn.pan || '').replace(/\D/g, '');
-  const amount = Number(txn.amount || 0);
-  const source = txn.source || 'ATM';
+  const pan     = String(txn.pan || '').replace(/\D/g, '');
+  const amount  = Number(txn.amount || 0);
+  const source  = txn.source || 'ATM';
   const txnType = txn.txn_type || 'Withdrawal';
-  const stan = nextStan();
+  const stan    = await nextStan();
 
   const log = (m) => steps.push(m);
   log(`ACQ: transaccion ${txnType} recibida desde ${source} — PAN ${maskPan(pan)}, monto ${amount.toFixed(2)}`);
 
   // 1. Prefix lookup
-  const prefix = findPrefix(pan);
+  const prefix = await findPrefix(pan);
   if (!prefix) {
     log('ACQ: no se encontro registro Prefix para el PAN → tarjeta invalida');
     return finalize({ stan, pan, amount, txnType, source,
@@ -69,37 +54,38 @@ function authorize(txn) {
   log(`PREFIX: coincide "${prefix.prefix}" (len ${prefix.pan_length}) → Issuer ${prefix.issuer_id}, tipo ${prefix.prefix_type}, Route Type ${prefix.route_type}`);
 
   const onUs = prefix.prefix_type === 'On-Us' ? 1 : 0;
-  const issuer = db.prepare('SELECT * FROM institutions WHERE institution_id = ?').get(prefix.issuer_id);
+  const issuer = await db.get('SELECT * FROM institutions WHERE institution_id = $1', [prefix.issuer_id]);
   if (issuer) log(`ISS: Issuer resuelto → ${issuer.institution_id} (${issuer.institution_name})`);
 
   // 2. Route selection via Source Routing Profile (STAR_SRC)
-  const profile = db.prepare('SELECT * FROM routing_profiles WHERE name = ?').get('STAR_SRC');
+  const profile = await db.get('SELECT * FROM routing_profiles WHERE name = $1', ['STAR_SRC']);
   let dest = null;
   if (profile) {
-    const dests = db.prepare('SELECT * FROM routing_destinations WHERE profile_ref = ? ORDER BY seq').all(profile.id);
+    const dests = await db.all(
+      'SELECT * FROM routing_destinations WHERE profile_ref = $1 ORDER BY seq', [profile.id]);
     dest = dests.find((d) => matchInstrument(d.instrument_type, source) &&
-              (!d.issuer_id || d.issuer_id === prefix.issuer_id)) ||
+                (!d.issuer_id || d.issuer_id === prefix.issuer_id)) ||
            dests.find((d) => matchInstrument(d.instrument_type, source)) ||
            dests[0] || null;
   }
   const limitName = (dest && dest.limit_profile) || 'LMT_STD';
-  const limit = db.prepare('SELECT * FROM limit_profiles WHERE name = ?').get(limitName);
+  const limit = await db.get('SELECT * FROM limit_profiles WHERE name = $1', [limitName]);
 
   // 3. Limit Profile check
   let limitResult = 'OK';
   if (limit) {
     log(`LIM: aplicando Limit Profile ${limit.name} (max/txn ${limit.max_amount_per_txn}, diario ${limit.daily_amount_limit}, conteo ${limit.daily_count_limit})`);
-    const totals = todayTotals(prefix.issuer_id);
-    if (amount < limit.min_amount) {
+    const totals = await todayTotals(prefix.issuer_id);
+    if (amount < Number(limit.min_amount)) {
       limitResult = 'Monto menor al minimo';
-    } else if (amount > limit.max_amount_per_txn) {
+    } else if (amount > Number(limit.max_amount_per_txn)) {
       limitResult = 'Excede limite por transaccion';
       log('LIM: RECHAZO — excede limite por transaccion');
       return finalize({ stan, pan, amount, txnType, source,
         prefix_matched: prefix.prefix, issuer_id: prefix.issuer_id, on_us: onUs,
         limit_profile: limitName, limit_result: limitResult, routed_to: null,
         action_code: '61', steps });
-    } else if (totals.sum + amount > limit.daily_amount_limit) {
+    } else if (totals.sum + amount > Number(limit.daily_amount_limit)) {
       limitResult = 'Excede limite diario';
       log('LIM: RECHAZO — excede acumulado diario');
       return finalize({ stan, pan, amount, txnType, source,
@@ -126,7 +112,7 @@ function authorize(txn) {
     log('AUT: autorizacion aprobada por el emisor');
   } else if (dest) {
     routedTo = dest.destination_routing_profile;
-    const host = db.prepare('SELECT * FROM hosts WHERE interface_name = ?').get(routedTo);
+    const host = await db.get('SELECT * FROM hosts WHERE interface_name = $1', [routedTo]);
     action = host ? '00' : '91';
     log(`RTR: transaccion Not-On-Us → ruteada a destino ${routedTo} (${host ? host.kind : 'destino no configurado'})`);
     log(action === '00' ? 'AUT: respuesta aprobada por el destino externo' : 'AUT: destino inoperativo');
@@ -152,21 +138,19 @@ function maskPan(pan) {
   return pan.slice(0, 6) + '*'.repeat(pan.length - 10) + pan.slice(-4);
 }
 
-function finalize(r) {
+async function finalize(r) {
   const desc = ACTION_CODES[r.action_code] || 'Unknown';
   r.steps.push(`JRNL: transaccion journalizada — Action Code ${r.action_code} (${desc})`);
-  const info = db.prepare(`INSERT INTO journal
-    (stan, pan, amount, txn_type, source, prefix_matched, issuer_id, on_us,
-     limit_profile, limit_result, routed_to, action_code, action_desc, steps_json)
-    VALUES (@stan,@pan,@amount,@txn_type,@source,@prefix_matched,@issuer_id,@on_us,
-     @limit_profile,@limit_result,@routed_to,@action_code,@action_desc,@steps_json)`).run({
-    stan: r.stan, pan: maskPan(r.pan), amount: r.amount, txn_type: r.txnType, source: r.source,
-    prefix_matched: r.prefix_matched, issuer_id: r.issuer_id, on_us: r.on_us,
-    limit_profile: r.limit_profile, limit_result: r.limit_result, routed_to: r.routed_to,
-    action_code: r.action_code, action_desc: desc, steps_json: JSON.stringify(r.steps),
-  });
+  const row = await db.run(`
+    INSERT INTO journal (stan, pan, amount, txn_type, source, prefix_matched, issuer_id,
+      on_us, limit_profile, limit_result, routed_to, action_code, action_desc, steps_json)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING id`,
+    [r.stan, maskPan(r.pan), r.amount, r.txnType, r.source,
+     r.prefix_matched, r.issuer_id, r.on_us,
+     r.limit_profile, r.limit_result, r.routed_to,
+     r.action_code, desc, JSON.stringify(r.steps)]);
   return {
-    id: info.lastInsertRowid, stan: r.stan, pan: maskPan(r.pan), amount: r.amount,
+    id: row.id, stan: r.stan, pan: maskPan(r.pan), amount: r.amount,
     txn_type: r.txnType, source: r.source, prefix_matched: r.prefix_matched,
     issuer_id: r.issuer_id, on_us: r.on_us, limit_profile: r.limit_profile,
     limit_result: r.limit_result, routed_to: r.routed_to,
