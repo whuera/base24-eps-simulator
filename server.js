@@ -238,6 +238,10 @@ app.post('/api/authorize', (req, res) => {
   }));
 });
 
-app.listen(PORT, () => {
-  console.log(`BASE24-eps Simulator escuchando en http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`BASE24-eps Simulator escuchando en http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;

@@ -10,7 +10,9 @@
 const path = require('path');
 const Database = require('better-sqlite3');
 
-const DB_PATH = path.join(__dirname, 'base24eps.sqlite');
+const DB_PATH = process.env.VERCEL
+  ? '/tmp/base24eps.sqlite'
+  : path.join(__dirname, 'base24eps.sqlite');
 const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
