@@ -12,6 +12,9 @@ const { authorize } = require('./engine');
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
+// Vercel / reverse-proxy: trust the first hop so secure cookies work over HTTPS
+app.set('trust proxy', 1);
+
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.urlencoded({ extended: true }));
@@ -19,16 +22,17 @@ app.use(express.json());
 app.use('/static', express.static(path.join(__dirname, 'public')));
 
 // ─── Sessions ────────────────────────────────────────────────────────────────
+const isProduction = process.env.NODE_ENV === 'production' || !!process.env.VERCEL;
 app.use(session({
   store: new PgSession({ pool, tableName: 'session' }),
   secret: process.env.SESSION_SECRET || 'mobilpymes-eps-secret-key-2024',
   resave: false,
   saveUninitialized: false,
   cookie: {
-    maxAge: 8 * 60 * 60 * 1000,          // 8 h
+    maxAge: 8 * 60 * 60 * 1000,
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
   },
 }));
 
@@ -80,7 +84,11 @@ app.post('/login', async (req, res) => {
     }
     await db.run('UPDATE users SET last_login=NOW() WHERE id=$1', [user.id]);
     req.session.user = { id: user.id, username: user.username, email: user.email, role: user.role };
-    res.redirect('/');
+    // Explicitly save session before redirect so the cookie is written in serverless envs
+    req.session.save((err) => {
+      if (err) return res.render('login', { error: 'Error de sesión: ' + err.message, username });
+      res.redirect('/');
+    });
   } catch (err) {
     res.render('login', { error: err.message, username });
   }
