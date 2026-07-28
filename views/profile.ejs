@@ -1,0 +1,89 @@
+<%- include('partials/top') %>
+
+<div class="mdi-window">
+  <div class="mdi-title">
+    <span class="ico">&#128100;</span> My Profile &mdash; <%= user.username %>
+    <span class="spacer"></span>
+    <span class="mini-win">_</span><span class="mini-win">&#9633;</span><span class="mini-win close">&#10005;</span>
+  </div>
+
+  <div class="mdi-body" style="display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;">
+
+    <!-- User info card -->
+    <div style="min-width:240px; flex:1;">
+      <fieldset class="group">
+        <legend>&#128100; Informaci&#243;n de cuenta</legend>
+        <div class="form-row"><label>Usuario</label><strong><%= user.username %></strong></div>
+        <div class="form-row"><label>Email</label><%= user.email %></div>
+        <div class="form-row">
+          <label>Rol</label>
+          <span class="badge" style="font-size:11px; background:<%= user.role==='admin'?'#0451A5':'#6c757d' %>">
+            <%= user.role %>
+          </span>
+        </div>
+        <div class="form-row">
+          <label>Estado</label>
+          <span class="badge <%= user.active ? 'ok' : 'no' %>" style="font-size:11px">
+            <%= user.active ? 'Activo' : 'Revocado' %>
+          </span>
+        </div>
+        <div class="form-row">
+          <label>&#218;ltimo login</label>
+          <span style="color:#666">
+            <%= user.last_login ? new Date(user.last_login).toLocaleString('es-EC') : '(primera sesi&#243;n)' %>
+          </span>
+        </div>
+        <div class="form-row">
+          <label>Miembro desde</label>
+          <span style="color:#666"><%= new Date(user.created_at).toLocaleDateString('es-EC') %></span>
+        </div>
+      </fieldset>
+    </div>
+
+    <!-- Change password -->
+    <div style="min-width:280px; flex:1;">
+      <fieldset class="group">
+        <legend>&#128274; Cambiar contrase&#241;a</legend>
+
+        <% if (msg) { %>
+          <div class="alert alert-ok" style="margin-bottom:10px;">&#10003; <%= msg %></div>
+        <% } %>
+        <% if (error) { %>
+          <div class="alert alert-err" style="margin-bottom:10px;">&#9888; <%= error %></div>
+        <% } %>
+
+        <form method="post" action="/profile/password">
+          <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:3px;">
+            <label>Contrase&#241;a actual</label>
+            <input type="password" name="current_password" required
+                   placeholder="contrase&#241;a actual" style="width:260px">
+          </div>
+          <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:3px; margin-top:8px;">
+            <label>Nueva contrase&#241;a <span style="color:#888">(m&#237;n. 6 caracteres)</span></label>
+            <input type="password" name="new_password" required
+                   placeholder="nueva contrase&#241;a" style="width:260px">
+          </div>
+          <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:3px; margin-top:8px;">
+            <label>Confirmar nueva contrase&#241;a</label>
+            <input type="password" name="confirm_password" required
+                   placeholder="repetir contrase&#241;a" style="width:260px">
+          </div>
+          <div class="actions" style="margin-top:14px;">
+            <button class="btn primary" type="submit">Actualizar contrase&#241;a</button>
+          </div>
+        </form>
+      </fieldset>
+    </div>
+
+  </div>
+
+  <div class="mdi-status">
+    <span class="ico">ℹ️</span>
+    Perfil de <%= user.username %> &mdash; rol: <%= user.role %>.
+    <% if (currentUser.role === 'admin') { %>
+      &nbsp;&#124;&nbsp;<a href="/users" style="color:#0451A5">&#8592; Volver a User Management</a>
+    <% } %>
+  </div>
+</div>
+
+<%- include('partials/bottom') %>

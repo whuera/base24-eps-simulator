@@ -11,9 +11,13 @@
     </div>
     <div class="bottom-content">
       <div class="log-line log-info">BASE24-eps Simulator &mdash; EPS Development / ESNCService</div>
-      <div class="log-line log-ok">&#10003; SQLite database initialized and seeded successfully.</div>
-      <div class="log-line log-info">Server listening on http://localhost:3000</div>
-      <div class="log-line log-warn">&#9432; This is a didactic simulator. Data is not persisted across cold starts on serverless.</div>
+      <div class="log-line log-ok">&#10003; PostgreSQL (Neon) connected and schema initialized.</div>
+      <div class="log-line log-info">Server ready &mdash; all routes protected by session auth.</div>
+      <% if (typeof currentUser !== 'undefined' && currentUser) { %>
+        <div class="log-line log-warn">
+          &#128100; Session: <%= currentUser.username %> (<%= currentUser.role %>) &mdash; active
+        </div>
+      <% } %>
     </div>
   </div>
 
@@ -22,10 +26,13 @@
     <span class="status-main">
       &#128274; 277 &ndash; Security Information &mdash; Last successful login: 2/16/12 8:14 AM
     </span>
+    <% if (typeof currentUser !== 'undefined' && currentUser) { %>
+      <span class="status-seg">&#128100; <%= currentUser.username %></span>
+      <span class="status-seg"><%= currentUser.role %></span>
+    <% } %>
     <span class="status-seg"><%= typeof active !== 'undefined' && active ? active : 'Ready' %></span>
     <span class="status-seg">Writable</span>
     <span class="status-seg">UTF-8</span>
-    <span class="status-seg">Ln 1, Col 1</span>
   </div>
 
 </div><!-- /eclipse-window -->

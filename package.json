@@ -1,7 +1,7 @@
 {
   "name": "base24-eps-simulator",
   "version": "1.0.0",
-  "description": "Simulador didactico de la plataforma ACI BASE24-eps (EPS Development - ESNCService). Replica las pantallas de configuracion de Institution, Host/Interchange, Prefix y Routing, e incluye un motor de simulacion de transacciones.",
+  "description": "Simulador didactico de la plataforma ACI BASE24-eps (EPS Development - ESNCService).",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -9,9 +9,12 @@
   "author": "William Huera",
   "license": "MIT",
   "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "connect-pg-simple": "^9.0.1",
     "dotenv": "^16.4.5",
     "ejs": "^3.1.10",
     "express": "^4.19.2",
+    "express-session": "^1.18.0",
     "pg": "^8.12.0"
   }
 }

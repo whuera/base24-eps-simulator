@@ -6,7 +6,15 @@
       "Bash(netstat:*)",
       "Bash(tasklist:*)",
       "Bash(curl:*)",
-      "Bash(gh auth:*)"
+      "Bash(gh auth:*)",
+      "Bash(gh repo:*)",
+      "WebFetch(domain:base24-eps-simulator.vercel.app)",
+      "Bash(vercel:*)",
+      "Bash(gh api:*)",
+      "Bash(/c/projects/simuladores/base24-eps-simulator/.env:*)",
+      "Bash(pkill:*)",
+      "Bash(ping:*)",
+      "Bash(xargs -I{} taskkill //PID {} //F)"
     ]
   }
 }

@@ -12,6 +12,12 @@
   <div class="eclipse-titlebar">
     <span class="eclipse-logo">Mobilpymes</span>
     <span class="title-text"><%= title || 'Dashboard' %> - Eclipse IDE</span>
+    <% if (typeof currentUser !== 'undefined' && currentUser) { %>
+      <span style="font-size:11px; color:#aaa; margin-right:12px;">
+        &#128100; <%= currentUser.username %>
+        <span style="font-size:10px; opacity:.7;">(<%= currentUser.role %>)</span>
+      </span>
+    <% } %>
     <span class="winbtn">&#8211;</span>
     <span class="winbtn">&#9633;</span>
     <span class="winbtn close">&#10005;</span>
@@ -26,23 +32,30 @@
     <% menus.forEach(function(m){ %>
       <a class="mi" href="<%= links[m] || '#' %>"><%- m.replace(/^(.)/, '<u>$1</u>') %></a>
     <% }); %>
+    <span style="flex:1"></span>
+    <a class="mi" href="/profile" title="Mi perfil">&#128100; Perfil</a>
+    <a class="mi" href="/logout" title="Cerrar sesi&#243;n">&#128275; Salir</a>
   </div>
 
   <!-- Toolbar -->
   <div class="eclipse-toolbar">
-    <a class="tb" href="/institution" title="Institution">🏦</a>
-    <a class="tb" href="/host"        title="Host / Interchange">🖧</a>
-    <a class="tb" href="/prefix"      title="Prefix">🔢</a>
-    <a class="tb" href="/routing"     title="Routing">🔀</a>
+    <a class="tb" href="/institution" title="Institution">&#127974;</a>
+    <a class="tb" href="/host"        title="Host / Interchange">&#128423;</a>
+    <a class="tb" href="/prefix"      title="Prefix">&#128290;</a>
+    <a class="tb" href="/routing"     title="Routing">&#128256;</a>
     <span class="sep"></span>
-    <a class="tb" href="/simulator"   title="Transaction Simulator">▶</a>
+    <a class="tb" href="/simulator"   title="Transaction Simulator">&#9654;</a>
     <span class="sep"></span>
-    <a class="tb" href="/"            title="Dashboard">🏠</a>
+    <% if (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'admin') { %>
+      <a class="tb" href="/users"     title="User Management">&#128101;</a>
+      <span class="sep"></span>
+    <% } %>
+    <a class="tb" href="/"            title="Dashboard">&#127968;</a>
     <span class="tb-spacer"></span>
     <div class="persp-bar">
-      <span class="persp active" title="BASE24-eps Perspective">🔌</span>
-      <span class="persp"        title="Debug Perspective">🐛</span>
-      <span class="persp"        title="Database Perspective">🗄</span>
+      <span class="persp active" title="BASE24-eps Perspective">&#128299;</span>
+      <span class="persp"        title="Debug Perspective">&#128027;</span>
+      <span class="persp"        title="Database Perspective">&#128452;</span>
     </div>
   </div>
 
@@ -73,13 +86,29 @@
         <a class="tree-item<%= active === 'System Operations' ? ' active' : '' %>" href="/simulator">
           <span class="ico">&#9654;</span> Transaction Simulator
         </a>
+
+        <% if (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'admin') { %>
+          <div style="border-top:1px solid #E0E0E0; margin:4px 0;"></div>
+          <div class="tree-project" style="font-size:10px; color:#888; font-weight:normal; padding:3px 8px;">
+            &#128272; Administration
+          </div>
+          <a class="tree-item<%= active === 'Users' ? ' active' : '' %>" href="/users">
+            <span class="ico">&#128101;</span> User Management
+          </a>
+        <% } %>
+
+        <div style="border-top:1px solid #E0E0E0; margin:4px 0;"></div>
+        <a class="tree-item<%= active === 'Profile' ? ' active' : '' %>" href="/profile">
+          <span class="ico">&#128100;</span> My Profile
+        </a>
+        <a class="tree-item" href="/logout">
+          <span class="ico">&#128275;</span> Logout
+        </a>
       </div>
     </div>
 
     <!-- Editor Area -->
     <div class="eclipse-editor-area">
-
-      <!-- Editor Tab Strip -->
       <div class="editor-tabstrip">
         <div class="editor-tab active">
           <span>&#128203;</span>
@@ -87,6 +116,4 @@
           <span class="tab-close">&#10005;</span>
         </div>
       </div>
-
-      <!-- Editor Content -->
       <div class="editor-content">

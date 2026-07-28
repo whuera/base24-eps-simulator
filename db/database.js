@@ -2,6 +2,7 @@
 
 require('dotenv').config();
 const { Pool } = require('pg');
+const bcrypt   = require('bcryptjs');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -11,7 +12,7 @@ const pool = new Pool({
   connectionTimeoutMillis: 5000,
 });
 
-// ─── Async helper (mirrors the old synchronous SQLite API) ───────────────────
+// ─── Async helper ────────────────────────────────────────────────────────────
 const db = {
   async get(sql, params = []) {
     const { rows } = await pool.query(sql, params);
@@ -21,15 +22,38 @@ const db = {
     const { rows } = await pool.query(sql, params);
     return rows;
   },
-  // For INSERT ... RETURNING id / UPDATE / DELETE
   async run(sql, params = []) {
     const { rows } = await pool.query(sql, params);
     return rows[0] || {};
   },
 };
 
-// ─── Schema (idempotent) ─────────────────────────────────────────────────────
+// ─── Schema ──────────────────────────────────────────────────────────────────
 async function initSchema() {
+  // Session store table (required by connect-pg-simple)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS "session" (
+      "sid"    VARCHAR   NOT NULL COLLATE "default",
+      "sess"   JSON      NOT NULL,
+      "expire" TIMESTAMP NOT NULL,
+      PRIMARY KEY ("sid")
+    )`);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire")`);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id            SERIAL PRIMARY KEY,
+      username      TEXT UNIQUE NOT NULL,
+      email         TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      role          TEXT DEFAULT 'user',
+      active        BOOLEAN DEFAULT true,
+      last_login    TIMESTAMP,
+      created_at    TIMESTAMP DEFAULT NOW(),
+      created_by    INTEGER REFERENCES users(id) ON DELETE SET NULL
+    )`);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS institutions (
       id                 SERIAL PRIMARY KEY,
@@ -142,10 +166,21 @@ async function initSchema() {
     )`);
 }
 
-// ─── Seed data (runs only when institutions table is empty) ──────────────────
+// ─── Seed ────────────────────────────────────────────────────────────────────
 async function seedIfEmpty() {
-  const row = await db.get('SELECT COUNT(*) AS n FROM institutions');
-  if (Number(row.n) > 0) return;
+  // Admin user
+  const adminExists = await db.get('SELECT id FROM users WHERE username=$1', ['admin']);
+  if (!adminExists) {
+    const hash = await bcrypt.hash('Admin123!', 10);
+    await db.run(
+      `INSERT INTO users (username, email, password_hash, role) VALUES ($1,$2,$3,$4)`,
+      ['admin', 'admin@mobilpymes.local', hash, 'admin']);
+    console.log('Usuario admin creado: admin / Admin123!');
+  }
+
+  // Demo data
+  const count = await db.get('SELECT COUNT(*) AS n FROM institutions');
+  if (Number(count.n) > 0) return;
 
   const bnk1 = await db.run(`
     INSERT INTO institutions (institution_id, institution_number, institution_name, issuer_type,
@@ -165,7 +200,7 @@ async function seedIfEmpty() {
 
   await db.run(
     'INSERT INTO contacts (institution_ref, contact, phone, email, comments) VALUES ($1,$2,$3,$4,$5)',
-    [bnk1.id, 'Operations Desk', '+1 402 555 0100', 'ops@firststatebank.example', 'Primary']);
+    [bnk1.id,'Operations Desk','+1 402 555 0100','ops@firststatebank.example','Primary']);
 
   await db.run(`
     INSERT INTO hosts (interface_name, kind, cutover_time, time_offset, statistics_interval,
@@ -182,25 +217,25 @@ async function seedIfEmpty() {
     ['STAR_HOST','Host','12:00 am','5-Day','STAR_SRC',
      'QA_ACQ_TXN','QA_ISS_ALL','CTX_STAR','MSG_STAR','ACT_CDE_STAR']);
 
-  for (const [prefix, len, issuer, type, route] of [
+  for (const [p, l, i, t, r] of [
     ['160107',16,'PCBA_INST','On-Us','Acquirer and Issuer'],
-    ['510510',16,'BNK1','On-Us','Acquirer and Issuer'],
-    ['400000',16,'BNK1','Not-On-Us','Issuer only'],
+    ['510510',16,'BNK1',     'On-Us','Acquirer and Issuer'],
+    ['400000',16,'BNK1',     'Not-On-Us','Issuer only'],
   ]) {
     await db.run(
-      'INSERT INTO prefixes (prefix, pan_length, issuer_id, prefix_type, route_type) VALUES ($1,$2,$3,$4,$5)',
-      [prefix, len, issuer, type, route]);
+      'INSERT INTO prefixes (prefix,pan_length,issuer_id,prefix_type,route_type) VALUES ($1,$2,$3,$4,$5)',
+      [p,l,i,t,r]);
   }
 
   await db.run(
-    'INSERT INTO limit_profiles (name, description, min_amount, max_amount_per_txn, daily_amount_limit, daily_count_limit) VALUES ($1,$2,$3,$4,$5,$6)',
+    'INSERT INTO limit_profiles (name,description,min_amount,max_amount_per_txn,daily_amount_limit,daily_count_limit) VALUES ($1,$2,$3,$4,$5,$6)',
     ['LMT_STD','Standard ATM/POS limits',1,500,2000,10]);
   await db.run(
-    'INSERT INTO limit_profiles (name, description, min_amount, max_amount_per_txn, daily_amount_limit, daily_count_limit) VALUES ($1,$2,$3,$4,$5,$6)',
+    'INSERT INTO limit_profiles (name,description,min_amount,max_amount_per_txn,daily_amount_limit,daily_count_limit) VALUES ($1,$2,$3,$4,$5,$6)',
     ['LMT_VIP','High limits',1,5000,20000,40]);
 
   const src = await db.run(
-    'INSERT INTO routing_profiles (name, description) VALUES ($1,$2) RETURNING id',
+    'INSERT INTO routing_profiles (name,description) VALUES ($1,$2) RETURNING id',
     ['STAR_SRC','Source Routing Profile principal']);
 
   for (const [seq, dest, issuer, lmt, instr, rt] of [
@@ -209,10 +244,10 @@ async function seedIfEmpty() {
     [3,'VISA_BASE1','',        'LMT_VIP','Any','Acquirer & Issuer'],
   ]) {
     await db.run(`
-      INSERT INTO routing_destinations (profile_ref, seq, destination_routing_profile, issuer_id,
-        limit_profile, issuer_surcharge_profile, instrument_type, route_type)
+      INSERT INTO routing_destinations (profile_ref,seq,destination_routing_profile,issuer_id,
+        limit_profile,issuer_surcharge_profile,instrument_type,route_type)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-      [src.id, seq, dest, issuer, lmt, '', instr, rt]);
+      [src.id,seq,dest,issuer,lmt,'',instr,rt]);
   }
 }
 

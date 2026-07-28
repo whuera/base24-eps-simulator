@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Login — Mobilpymes EPS</title>
+  <link rel="stylesheet" href="/static/css/base24.css">
+</head>
+<body class="login-bg">
+
+<div class="login-dialog">
+
+  <!-- Dialog title bar -->
+  <div class="login-titlebar">
+    <span class="login-title-logo">&#128299;</span>
+    <span>Mobilpymes — EPS Development / ESNCService</span>
+    <span style="flex:1"></span>
+    <span class="login-close">&#10005;</span>
+  </div>
+
+  <!-- Header banner -->
+  <div class="login-banner">
+    <span class="login-badge">Mobilpymes</span>
+    <div class="login-banner-text">
+      BASE24-eps Simulator<br>
+      <small>EPS Development — ESNCService</small>
+    </div>
+  </div>
+
+  <!-- Form -->
+  <div class="login-body">
+    <% if (error) { %>
+      <div class="login-error">&#9888; <%= error %></div>
+    <% } %>
+    <form method="post" action="/login" autocomplete="on">
+      <div class="login-field">
+        <label for="l-user">Usuario</label>
+        <input id="l-user" type="text" name="username" value="<%= username || '' %>"
+               autofocus autocomplete="username" placeholder="nombre de usuario">
+      </div>
+      <div class="login-field">
+        <label for="l-pass">Contraseña</label>
+        <input id="l-pass" type="password" name="password"
+               autocomplete="current-password" placeholder="••••••••">
+      </div>
+      <button class="login-btn" type="submit">Iniciar sesi&#243;n</button>
+    </form>
+  </div>
+
+  <!-- Footer -->
+  <div class="login-footer">
+    &#128274; Acceso restringido &mdash; solo usuarios autorizados
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,134 @@
+<%- include('partials/top') %>
+
+<div class="mdi-window">
+  <div class="mdi-title">
+    <span class="ico">&#128101;</span> User Management &mdash; Mobilpymes EPS
+    <span class="spacer"></span>
+    <span class="mini-win">_</span><span class="mini-win">&#9633;</span><span class="mini-win close">&#10005;</span>
+  </div>
+
+  <div class="mdi-toolbar">
+    <span class="tb" title="New user" onclick="document.getElementById('new-user-section').style.display='block';this.style.display='none'">&#43; New User</span>
+    <span class="tb" title="Refresh" onclick="location.reload()">&#8635;</span>
+  </div>
+
+  <div class="mdi-body">
+
+    <!-- Alerts -->
+    <% if (msg) { %>
+      <div class="alert alert-ok">&#10003; <%= msg %></div>
+    <% } %>
+    <% if (error) { %>
+      <div class="alert alert-err">&#9888; <%= error %></div>
+    <% } %>
+
+    <!-- New user form (hidden by default) -->
+    <div id="new-user-section" style="display:none; margin-bottom:14px;">
+      <fieldset class="group">
+        <legend>&#43; Crear nuevo usuario</legend>
+        <form method="post" action="/users">
+          <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+            <div class="login-field" style="margin:0">
+              <label>Usuario</label>
+              <input type="text" name="username" required placeholder="username" style="width:140px">
+            </div>
+            <div class="login-field" style="margin:0">
+              <label>Email</label>
+              <input type="email" name="email" required placeholder="user@example.com" style="width:200px">
+            </div>
+            <div class="login-field" style="margin:0">
+              <label>Contrase&#241;a</label>
+              <input type="password" name="password" required placeholder="m&#237;n. 6 caracteres" style="width:160px">
+            </div>
+            <div class="login-field" style="margin:0">
+              <label>Rol</label>
+              <select name="role" style="width:100px; height:22px;">
+                <option value="user">user</option>
+                <option value="admin">admin</option>
+              </select>
+            </div>
+            <button class="btn primary" type="submit">Crear</button>
+            <button class="btn" type="button"
+              onclick="document.getElementById('new-user-section').style.display='none';document.querySelector('.tb').style.display=''">
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </fieldset>
+    </div>
+
+    <!-- Users table -->
+    <table class="grid" style="font-size:11px;">
+      <thead>
+        <tr>
+          <th style="width:130px">Usuario</th>
+          <th>Email</th>
+          <th style="width:70px">Rol</th>
+          <th style="width:80px">Estado</th>
+          <th style="width:140px">&#218;ltimo login</th>
+          <th style="width:100px">Creado</th>
+          <th style="width:160px">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% users.forEach(function(u) { %>
+          <tr>
+            <td>
+              <strong><%= u.username %></strong>
+              <% if (u.id === currentUser.id) { %>
+                <span class="pill" style="background:#EBF4FF;color:#0451A5">(t&#250;)</span>
+              <% } %>
+            </td>
+            <td><%= u.email %></td>
+            <td>
+              <span class="badge <%= u.role === 'admin' ? 'ok' : '' %>"
+                style="font-size:10px; background:<%= u.role==='admin'?'#0451A5':'#6c757d' %>">
+                <%= u.role %>
+              </span>
+            </td>
+            <td>
+              <span class="badge <%= u.active ? 'ok' : 'no' %>" style="font-size:10px">
+                <%= u.active ? 'Activo' : 'Revocado' %>
+              </span>
+            </td>
+            <td style="color:#666">
+              <%= u.last_login ? new Date(u.last_login).toLocaleString('es-EC') : '(nunca)' %>
+            </td>
+            <td style="color:#666">
+              <%= new Date(u.created_at).toLocaleDateString('es-EC') %>
+            </td>
+            <td>
+              <% if (u.id !== currentUser.id) { %>
+                <form method="post" action="/users/<%= u.id %>/toggle" style="display:inline">
+                  <button class="btn" type="submit" style="font-size:10px; padding:2px 8px;"
+                    onclick="return confirm('<%= u.active ? '¿Revocar acceso a ' : '¿Restaurar acceso a ' %><%= u.username %>?')">
+                    <%= u.active ? '&#128274; Revocar' : '&#128275; Restaurar' %>
+                  </button>
+                </form>
+                <form method="post" action="/users/<%= u.id %>/delete" style="display:inline; margin-left:4px">
+                  <button class="btn danger" type="submit" style="font-size:10px; padding:2px 8px;"
+                    onclick="return confirm('¿Eliminar permanentemente a <%= u.username %>?')">
+                    &#128465; Eliminar
+                  </button>
+                </form>
+              <% } else { %>
+                <span style="color:#aaa; font-size:10px;">cuenta propia</span>
+              <% } %>
+            </td>
+          </tr>
+        <% }); %>
+        <% if (users.length === 0) { %>
+          <tr><td colspan="7" style="color:#aaa; text-align:center">Sin usuarios</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+
+  </div>
+  <div class="mdi-status">
+    <span class="ico">&#128101;</span>
+    <%= users.length %> usuario<%= users.length !== 1 ? 's' : '' %> registrado<%= users.length !== 1 ? 's' : '' %>.
+    Solo el administrador puede crear, revocar o eliminar usuarios.
+  </div>
+</div>
+
+<%- include('partials/bottom') %>
