@@ -1,180 +1,370 @@
 /* ============================================================
-   BASE24-eps Simulator — look & feel Windows XP / Java Swing
+   BASE24-eps Simulator — Eclipse IDE Theme
    ============================================================ */
-* { box-sizing: border-box; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
 html, body {
-  margin: 0; padding: 0; height: 100%;
-  font-family: Tahoma, "Segoe UI", Verdana, sans-serif;
-  font-size: 11px; color: #000;
-  background: #3a6ea5;
+  height: 100%; width: 100%;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 12px; color: #1a1a1a;
+  background: #1C1C1C;
+  overflow: hidden;
 }
-a { color: inherit; }
+a { color: inherit; text-decoration: none; }
 
-/* ---- Main application window (EPS Development - ESNCService) ---- */
-.app-window {
-  position: absolute; inset: 6px;
+/* ===================== ECLIPSE WINDOW ===================== */
+.eclipse-window {
+  position: absolute; inset: 0;
   display: flex; flex-direction: column;
-  border: 1px solid #003c74;
-  background: #ece9d8;
-  box-shadow: 0 3px 14px rgba(0,0,0,.5);
+  background: #F0F0F0;
 }
-.app-titlebar {
-  height: 26px; display: flex; align-items: center;
-  padding: 0 4px 0 6px;
-  color: #fff; font-weight: bold; font-size: 12px;
-  background: linear-gradient(#0058e6 0%, #3f8cf3 8%, #0757e0 40%, #0148d1 88%, #0353e8 100%);
-  border-bottom: 1px solid #003c74;
-}
-.app-titlebar .aci-logo {
-  background: #b40404; color: #fff; font-weight: bold; font-size: 10px;
-  padding: 1px 6px; margin-right: 6px; border-radius: 2px; letter-spacing: .5px;
-}
-.app-titlebar .spacer { flex: 1; }
-.winbtn {
-  width: 21px; height: 20px; margin-left: 2px;
-  border: 1px solid #fff; border-radius: 3px;
-  background: linear-gradient(#5a9bf6,#0a52dd);
-  color: #fff; font-weight: bold; font-size: 11px; line-height: 16px;
-  text-align: center; cursor: default;
-}
-.winbtn.close { background: linear-gradient(#f18f77,#c1391b); }
 
-/* ---- Menu bar ---- */
-.menubar {
-  display: flex; gap: 2px; padding: 2px 4px;
-  background: #ece9d8; border-bottom: 1px solid #aca899;
-  font-size: 11px;
+/* ===================== TITLE BAR ===================== */
+.eclipse-titlebar {
+  height: 28px; flex-shrink: 0;
+  display: flex; align-items: center; padding: 0 8px;
+  background: #2B2D3A;
+  color: #D4D4D4; font-size: 12px; user-select: none;
 }
-.menubar .mi { padding: 2px 8px; cursor: default; border: 1px solid transparent; }
-.menubar .mi:hover { background: #c1d2ee; border: 1px solid #a0b8dc; }
-.menubar .mi u { text-decoration: underline; }
-
-/* ---- Toolbar ---- */
-.toolbar {
-  display: flex; gap: 3px; align-items: center;
-  padding: 3px 5px; background: #ece9d8;
-  border-bottom: 1px solid #aca899;
+.eclipse-titlebar .eclipse-logo {
+  background: #E05C00; color: #fff; font-weight: bold; font-size: 10px;
+  padding: 1px 6px; margin-right: 8px; border-radius: 2px; letter-spacing: .5px;
 }
-.toolbar .tb {
-  width: 22px; height: 22px; border: 1px solid transparent;
+.eclipse-titlebar .title-text { flex: 1; font-size: 12px; }
+.eclipse-titlebar .winbtn {
+  width: 18px; height: 18px; margin-left: 4px;
+  border: none; background: transparent;
+  color: #aaa; font-size: 12px;
   display: inline-flex; align-items: center; justify-content: center;
-  font-size: 13px; cursor: default; color: #444;
+  cursor: default; border-radius: 2px; line-height: 1;
 }
-.toolbar .tb:hover { border: 1px solid #a0b8dc; background: #cfe0f5; }
-.toolbar .sep { width: 1px; height: 18px; background: #aca899; margin: 0 3px; }
+.eclipse-titlebar .winbtn:hover { background: rgba(255,255,255,.15); color: #fff; }
+.eclipse-titlebar .winbtn.close:hover { background: #C42B1C; color: #fff; }
 
-/* ---- MDI desktop area ---- */
-.mdi {
-  flex: 1; position: relative; overflow: auto;
-  background: #5a7ea6;
-  background-image:
-    linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
-  background-size: 20px 20px;
-  padding: 14px;
+/* ===================== MENU BAR ===================== */
+.eclipse-menubar {
+  height: 24px; flex-shrink: 0;
+  display: flex; align-items: stretch;
+  background: #F0F0F0;
+  border-bottom: 1px solid #CCCCCC;
+  padding: 0 2px;
+}
+.eclipse-menubar .mi {
+  padding: 0 10px;
+  display: flex; align-items: center;
+  font-size: 12px; cursor: default; color: #1a1a1a;
+}
+.eclipse-menubar .mi:hover { background: #CCE4F7; }
+.eclipse-menubar .mi u { text-decoration: underline; }
+
+/* ===================== TOOLBAR ===================== */
+.eclipse-toolbar {
+  height: 30px; flex-shrink: 0;
+  display: flex; align-items: center; gap: 1px;
+  background: #EBEBEB;
+  border-bottom: 1px solid #C8C8C8;
+  padding: 0 4px;
+}
+.eclipse-toolbar .tb {
+  width: 26px; height: 24px;
+  border: 1px solid transparent; border-radius: 2px;
+  background: transparent;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 14px; cursor: default; color: #333;
+}
+.eclipse-toolbar .tb:hover { background: #CCE4F7; border-color: #82BDDB; }
+.eclipse-toolbar .sep { width: 1px; height: 20px; background: #C8C8C8; margin: 0 4px; }
+.eclipse-toolbar .tb-spacer { flex: 1; }
+.persp-bar {
+  display: flex; align-items: center; gap: 1px;
+  border-left: 1px solid #C8C8C8; padding-left: 6px; margin-left: 4px;
+}
+.persp-bar .persp {
+  width: 26px; height: 24px;
+  border: 1px solid transparent; border-radius: 2px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 13px; cursor: default;
+}
+.persp-bar .persp.active { background: #CCE4F7; border-color: #82BDDB; }
+
+/* ===================== WORKBENCH ===================== */
+.eclipse-workbench {
+  flex: 1; display: flex;
+  overflow: hidden;
+  background: #BCBCBC;
+  gap: 1px; min-height: 0;
 }
 
-/* ---- MDI child window (config windows) ---- */
+/* ===================== SIDEBAR ===================== */
+.eclipse-sidebar {
+  width: 220px; flex-shrink: 0;
+  display: flex; flex-direction: column;
+  background: #F5F5F5;
+}
+.view-header {
+  height: 22px; flex-shrink: 0;
+  display: flex; align-items: center; padding: 0 4px 0 6px;
+  background: linear-gradient(#EAEAEA, #DCDCDC);
+  border-bottom: 1px solid #C4C4C4;
+  font-size: 11px; font-weight: bold; color: #444; user-select: none;
+}
+.view-header .view-title { flex: 1; }
+.view-header .view-btn {
+  width: 18px; height: 18px; font-size: 11px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #666; cursor: default; border-radius: 2px;
+}
+.view-header .view-btn:hover { background: #CCE4F7; }
+
+.view-content { flex: 1; overflow-y: auto; }
+
+.tree-project {
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 8px;
+  font-size: 11px; font-weight: bold; color: #1a1a1a;
+  cursor: default; border-bottom: 1px solid #E4E4E4;
+  background: #EFEFEF;
+}
+.tree-item {
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 8px 4px 20px;
+  font-size: 11px; color: #333; cursor: default;
+}
+.tree-item:hover { background: #E1EFFE; }
+.tree-item.active { background: #3B78C4; color: #fff; }
+.tree-item .ico { font-size: 12px; }
+
+/* ===================== EDITOR AREA ===================== */
+.eclipse-editor-area {
+  flex: 1; display: flex; flex-direction: column;
+  background: #fff; overflow: hidden; min-width: 0;
+}
+
+/* Editor Tab Strip */
+.editor-tabstrip {
+  display: flex; align-items: flex-end;
+  background: #EEEEEE;
+  border-bottom: 2px solid #C8C8C8;
+  padding: 4px 4px 0;
+  flex-shrink: 0; min-height: 28px;
+  gap: 2px;
+}
+.editor-tab {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px 3px;
+  font-size: 11px; color: #555;
+  background: #D4D4D4;
+  border: 1px solid #C0C0C0; border-bottom: none;
+  border-radius: 3px 3px 0 0;
+  white-space: nowrap; cursor: default;
+  position: relative; bottom: -2px;
+}
+.editor-tab.active {
+  background: #fff; color: #1a1a1a; font-weight: bold;
+  border-color: #C8C8C8; border-bottom: 2px solid #fff;
+}
+.editor-tab .tab-close {
+  font-size: 9px; color: #999;
+  width: 14px; height: 14px; border-radius: 2px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.editor-tab.active .tab-close:hover { background: #F4A0A0; color: #800; }
+
+/* Editor Content */
+.editor-content {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  background: #fff;
+}
+
+/* ===================== BOTTOM CONSOLE PANEL ===================== */
+.eclipse-bottom {
+  height: 150px; min-height: 90px; flex-shrink: 0;
+  display: flex; flex-direction: column;
+  border-top: 1px solid #BCBCBC;
+}
+.bottom-tabstrip {
+  display: flex; align-items: center;
+  background: #EEEEEE;
+  border-bottom: 1px solid #C8C8C8;
+  padding: 0 4px; flex-shrink: 0; height: 26px;
+}
+.bottom-tab {
+  padding: 3px 12px;
+  font-size: 11px; color: #555; cursor: default;
+  border: 1px solid transparent;
+  border-radius: 3px 3px 0 0;
+}
+.bottom-tab.active {
+  background: #1E1E1E; color: #ccc; font-weight: bold;
+  border-color: #555;
+}
+.bottom-content {
+  flex: 1; overflow-y: auto; padding: 5px 10px;
+  font-family: Consolas, "Courier New", monospace; font-size: 11px;
+  background: #1E1E1E; color: #CCCCCC;
+}
+.bottom-content .log-line { margin: 1px 0; line-height: 1.6; }
+.bottom-content .log-ok   { color: #4EC94E; }
+.bottom-content .log-err  { color: #F48771; }
+.bottom-content .log-info { color: #9CDCFE; }
+.bottom-content .log-warn { color: #CE9178; }
+
+/* ===================== STATUS BAR ===================== */
+.eclipse-statusbar {
+  height: 20px; flex-shrink: 0;
+  display: flex; align-items: center;
+  background: #DCDCDC;
+  border-top: 1px solid #C0C0C0;
+  font-size: 11px; color: #444;
+}
+.eclipse-statusbar .status-main { flex: 1; padding: 0 8px; }
+.eclipse-statusbar .status-seg {
+  padding: 0 10px; border-left: 1px solid #C0C0C0;
+  height: 100%; display: flex; align-items: center;
+  white-space: nowrap;
+}
+
+/* ===================== MDI WINDOW (restyled as Eclipse panel) ===================== */
 .mdi-window {
-  background: #ece9d8; border: 1px solid #0a246a;
-  box-shadow: 2px 3px 10px rgba(0,0,0,.4);
-  margin: 0 auto 16px; max-width: 720px;
+  background: #fff;
+  border: none; border-bottom: 1px solid #E0E0E0;
+  box-shadow: none;
+  margin: 0; max-width: none !important;
 }
 .mdi-title {
-  height: 22px; display: flex; align-items: center; padding: 0 3px 0 6px;
-  color: #fff; font-weight: bold;
-  background: linear-gradient(#0058e6 0%, #3f8cf3 10%, #0757e0 45%, #0148d1 90%);
+  height: 26px;
+  display: flex; align-items: center; padding: 0 6px;
+  background: linear-gradient(#EAEAEA, #DCDCDC);
+  border-bottom: 1px solid #C8C8C8;
+  color: #333; font-weight: bold; font-size: 12px;
+  flex-shrink: 0;
 }
-.mdi-title .ico { margin-right: 5px; }
+.mdi-title .ico { margin-right: 6px; font-size: 14px; }
 .mdi-title .spacer { flex: 1; }
-.mini-win { width: 16px; height: 15px; border: 1px solid #dfe9fb; border-radius: 2px;
-  margin-left: 2px; background: linear-gradient(#5a9bf6,#0a52dd); text-align: center;
-  color: #fff; font-size: 10px; line-height: 13px; }
-.mini-win.close { background: linear-gradient(#f18f77,#c1391b); }
+.mini-win {
+  width: 16px; height: 15px; border: 1px solid #C4C4C4;
+  border-radius: 2px; margin-left: 2px;
+  background: #E8E8E8; text-align: center;
+  color: #666; font-size: 10px; line-height: 13px; cursor: default;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.mini-win:hover { background: #CCE4F7; border-color: #82BDDB; }
+.mini-win.close:hover { background: #F4A0A0; border-color: #C16060; color: #800; }
 
 .mdi-toolbar {
-  display: flex; gap: 4px; padding: 3px 6px;
-  border-bottom: 1px solid #aca899; background: #f4f2ea;
+  display: flex; gap: 2px; padding: 3px 6px;
+  border-bottom: 1px solid #E4E4E4; background: #F4F4F4; flex-shrink: 0;
 }
-.mdi-toolbar .tb { width: 20px; height: 20px; border: 1px solid transparent;
-  display: inline-flex; align-items: center; justify-content: center; cursor: default; }
-.mdi-toolbar .tb:hover { border: 1px solid #a0b8dc; background: #cfe0f5; }
+.mdi-toolbar .tb {
+  width: 22px; height: 22px; border: 1px solid transparent; border-radius: 2px;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: default; font-size: 13px; background: none;
+}
+.mdi-toolbar .tb:hover { border-color: #82BDDB; background: #CCE4F7; }
 
-.mdi-body { padding: 10px 12px; }
+.mdi-body { padding: 12px 14px; }
 
-/* ---- Form fields ---- */
-.form-row { display: flex; align-items: center; margin-bottom: 5px; gap: 6px; }
-.form-row label { min-width: 130px; text-align: left; color: #000; }
-.form-row.req label { color: #0a2fb0; }
+/* ===================== FORM FIELDS ===================== */
+.form-row { display: flex; align-items: center; margin-bottom: 6px; gap: 6px; }
+.form-row label { min-width: 130px; color: #333; font-size: 11px; }
+.form-row.req label { color: #0451A5; font-weight: bold; }
+
 input[type=text], select, textarea {
-  border: 1px solid #7f9db9; padding: 2px 3px; font-family: inherit; font-size: 11px;
-  background: #fff; height: 20px;
+  border: 1px solid #BABABA; padding: 2px 4px;
+  font-family: inherit; font-size: 11px;
+  background: #fff; height: 22px; color: #1a1a1a;
+  border-radius: 0;
 }
-input[type=text]:focus, select:focus { outline: 1px dotted #333; }
-input.long { width: 260px; } input.med { width: 150px; } input.short { width: 70px; }
+input[type=text]:focus, select:focus {
+  outline: none; border-color: #0078D4;
+  box-shadow: 0 0 0 1px #0078D4;
+}
+input.long  { width: 260px; } input.med { width: 150px; } input.short { width: 70px; }
 select.long { width: 268px; } select.med { width: 156px; }
 textarea { height: auto; width: 100%; }
 
-/* ---- Titled group border (Swing TitledBorder) ---- */
+/* Group border */
 fieldset.group {
-  border: 1px solid #b0b0b0; margin: 8px 0; padding: 8px 10px 10px;
+  border: 1px solid #D4D4D4; margin: 8px 0; padding: 8px 10px 12px;
+  background: #FAFAFA;
 }
-fieldset.group > legend { color: #0a2fb0; padding: 0 4px; font-weight: normal; }
+fieldset.group > legend { color: #0451A5; padding: 0 4px; font-size: 11px; }
 
-/* ---- Tabs ---- */
-.tabstrip { display: flex; flex-wrap: wrap; border-bottom: 1px solid #7f9db9; margin-top: 6px; }
+/* ===================== TABS (within content) ===================== */
+.tabstrip {
+  display: flex; flex-wrap: wrap; border-bottom: 1px solid #C8C8C8; margin-top: 8px;
+}
 .tabstrip a {
-  padding: 3px 9px; margin-right: 2px; background: #dcd9cd; text-decoration: none;
-  border: 1px solid #aca899; border-bottom: none; color: #000; font-size: 11px;
-  border-radius: 3px 3px 0 0; position: relative; top: 1px;
+  padding: 5px 14px; margin-right: 2px;
+  text-decoration: none; font-size: 11px; color: #555;
+  border: 1px solid transparent; border-bottom: none;
+  border-radius: 3px 3px 0 0;
+  background: #EBEBEB; position: relative; top: 1px;
 }
-.tabstrip a.active { background: #fff; border-color: #7f9db9; font-weight: bold; }
-.tabstrip a.disabled { color: #9a968a; }
-.tab-pane { border: 1px solid #7f9db9; border-top: none; background: #fff; padding: 12px 14px; }
+.tabstrip a.active {
+  background: #fff; color: #1a1a1a; font-weight: bold;
+  border-color: #C8C8C8; border-bottom-color: #fff;
+}
+.tabstrip a.disabled { color: #BBBBBB; pointer-events: none; }
+.tab-pane { border: 1px solid #C8C8C8; border-top: none; background: #fff; padding: 12px 14px; }
 
-/* ---- Data grids ---- */
-table.grid { border-collapse: collapse; width: 100%; background: #fff; }
+/* ===================== DATA GRID ===================== */
+table.grid { border-collapse: collapse; width: 100%; background: #fff; font-size: 11px; }
 table.grid th {
-  background: #ece9d8; border: 1px solid #aca899; padding: 3px 6px; text-align: left;
-  font-weight: normal;
+  background: #F0F0F0; border: 1px solid #D4D4D4;
+  padding: 4px 8px; text-align: left; font-weight: bold; color: #444;
 }
-table.grid td { border: 1px solid #d7d3c8; padding: 3px 6px; }
-table.grid tr:hover td { background: #eaf1fb; }
+table.grid td { border: 1px solid #E4E4E4; padding: 4px 8px; color: #333; }
+table.grid tr:hover td { background: #EAF3FD; }
 
-/* ---- Status bar ---- */
-.mdi-status, .app-status {
-  height: 20px; display: flex; align-items: center; padding: 0 8px;
-  border-top: 1px solid #fff; background: #ece9d8; color: #333;
-  box-shadow: inset 0 1px 0 #aca899;
+/* ===================== STATUS LINE INSIDE PANEL ===================== */
+.mdi-status {
+  height: 22px; display: flex; align-items: center; padding: 0 8px;
+  background: #F0F0F0; border-top: 1px solid #D8D8D8;
+  color: #444; font-size: 11px;
 }
-.mdi-status .ico { color: #1a6d1a; margin-right: 6px; }
+.mdi-status .ico { color: #167516; margin-right: 6px; }
+.app-status { display: none; }
 
-/* ---- Buttons ---- */
+/* ===================== BUTTONS ===================== */
 .btn {
-  border: 1px solid #7f9db9; background: linear-gradient(#fdfdfd,#dfdfd8);
-  padding: 3px 12px; font-family: inherit; font-size: 11px; cursor: pointer;
-  border-radius: 3px;
+  border: 1px solid #C0C0C0; background: #E8E8E8;
+  padding: 4px 16px; font-family: inherit; font-size: 11px;
+  cursor: pointer; color: #1a1a1a; border-radius: 2px;
 }
-.btn:hover { background: linear-gradient(#fff,#cfe0f5); border-color: #4c7bb0; }
-.btn.primary { font-weight: bold; }
-.btn.danger { border-color: #b04a4a; }
-.actions { margin-top: 10px; display: flex; gap: 6px; }
+.btn:hover { background: #CCE4F7; border-color: #82BDDB; }
+.btn:active { background: #A8CCDF; }
+.btn.primary { border-color: #0070C8; background: #EBF4FF; color: #0451A5; font-weight: bold; }
+.btn.primary:hover { background: #CCE4F7; }
+.btn.danger { border-color: #C05050; }
+.actions { margin-top: 12px; display: flex; gap: 6px; }
 
-/* ---- Desktop launcher (home) ---- */
-.launcher { display: grid; grid-template-columns: repeat(auto-fill, 118px); gap: 18px;
-  padding: 20px; }
-.launch-ico { width: 118px; text-align: center; color: #fff; text-decoration: none;
-  cursor: default; }
-.launch-ico .glyph { font-size: 40px; display: block; filter: drop-shadow(1px 2px 2px rgba(0,0,0,.5)); }
-.launch-ico .lbl { display: inline-block; margin-top: 4px; padding: 1px 4px; }
-.launch-ico:hover .lbl { background: #1866c9; }
-.launch-ico .cnt { font-size: 10px; opacity: .85; display: block; }
+/* ===================== DESKTOP LAUNCHER ===================== */
+.launcher {
+  display: grid; grid-template-columns: repeat(auto-fill, 148px);
+  gap: 14px; padding: 20px;
+}
+.launch-ico {
+  width: 148px; padding: 14px 10px; text-align: center;
+  color: #333; cursor: default;
+  border: 1px solid #D8D8D8; background: #FAFAFA; border-radius: 2px;
+}
+.launch-ico:hover { background: #EBF4FF; border-color: #82BDDB; }
+.launch-ico .glyph { font-size: 30px; display: block; }
+.launch-ico .lbl { display: block; margin-top: 8px; font-weight: bold; font-size: 11px; color: #333; }
+.launch-ico .cnt { font-size: 10px; color: #777; display: block; margin-top: 2px; }
 
-/* result / trace box */
-.trace { background: #101a2c; color: #cfe3ff; font-family: Consolas, monospace; font-size: 11px;
-  padding: 10px 12px; border: 1px solid #0a246a; white-space: pre-wrap; line-height: 1.5; }
-.badge { display: inline-block; padding: 1px 8px; border-radius: 3px; font-weight: bold; color: #fff; }
-.badge.ok { background: #1a7d1a; } .badge.no { background: #b40404; }
-.hint { color: #556; margin: 4px 0 0; }
-.pill { display:inline-block; background:#e7edf6; border:1px solid #9fb6d4; border-radius:10px;
-  padding:0 7px; margin:1px; font-size:10px; }
+/* ===================== SIMULATOR / TRACE ===================== */
+.trace {
+  background: #1E1E1E; color: #D4D4D4;
+  font-family: Consolas, monospace; font-size: 11px;
+  padding: 10px 12px; border: 1px solid #444;
+  white-space: pre-wrap; line-height: 1.6;
+}
+.badge { display: inline-block; padding: 2px 8px; border-radius: 2px; font-weight: bold; color: #fff; }
+.badge.ok { background: #167516; } .badge.no { background: #C01515; }
+.hint { color: #777; margin: 4px 0 0; font-size: 11px; }
+.pill {
+  display: inline-block; background: #EBF4FF; border: 1px solid #82BDDB;
+  border-radius: 10px; padding: 0 8px; margin: 2px; font-size: 10px; color: #333;
+}

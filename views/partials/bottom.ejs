@@ -1,9 +1,33 @@
-  </div><!-- /mdi -->
-  <div class="app-status">
-    <span>🔒 277 – Security Information - Last successful login: 2/16/12 8:14 AM</span>
-    <span class="spacer" style="flex:1"></span>
-    <span><%= typeof active !== 'undefined' && active ? active : 'Ready' %></span>
+      </div><!-- /editor-content -->
+    </div><!-- /eclipse-editor-area -->
+  </div><!-- /eclipse-workbench -->
+
+  <!-- Bottom Console Panel -->
+  <div class="eclipse-bottom">
+    <div class="bottom-tabstrip">
+      <div class="bottom-tab active">Console</div>
+      <div class="bottom-tab">Problems</div>
+      <div class="bottom-tab">Tasks</div>
+    </div>
+    <div class="bottom-content">
+      <div class="log-line log-info">BASE24-eps Simulator &mdash; EPS Development / ESNCService</div>
+      <div class="log-line log-ok">&#10003; SQLite database initialized and seeded successfully.</div>
+      <div class="log-line log-info">Server listening on http://localhost:3000</div>
+      <div class="log-line log-warn">&#9432; This is a didactic simulator. Data is not persisted across cold starts on serverless.</div>
+    </div>
   </div>
-</div><!-- /app-window -->
+
+  <!-- Status Bar -->
+  <div class="eclipse-statusbar">
+    <span class="status-main">
+      &#128274; 277 &ndash; Security Information &mdash; Last successful login: 2/16/12 8:14 AM
+    </span>
+    <span class="status-seg"><%= typeof active !== 'undefined' && active ? active : 'Ready' %></span>
+    <span class="status-seg">Writable</span>
+    <span class="status-seg">UTF-8</span>
+    <span class="status-seg">Ln 1, Col 1</span>
+  </div>
+
+</div><!-- /eclipse-window -->
 </body>
 </html>

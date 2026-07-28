@@ -2,39 +2,91 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <title><%= title %> — BASE24-eps Simulator</title>
+  <title><%= title %> — Mobilpymes</title>
   <link rel="stylesheet" href="/static/css/base24.css">
 </head>
 <body>
-<div class="app-window">
-  <div class="app-titlebar">
-    <span class="aci-logo">Mobilpymes</span>
-    <span>EPS Development - ESNCService</span>
-    <span class="spacer"></span>
-    <span class="winbtn">_</span>
-    <span class="winbtn">▢</span>
-    <span class="winbtn close">✕</span>
+<div class="eclipse-window">
+
+  <!-- Title Bar -->
+  <div class="eclipse-titlebar">
+    <span class="eclipse-logo">Mobilpymes</span>
+    <span class="title-text"><%= title || 'Dashboard' %> - Eclipse IDE</span>
+    <span class="winbtn">&#8211;</span>
+    <span class="winbtn">&#9633;</span>
+    <span class="winbtn close">&#10005;</span>
   </div>
 
-  <div class="menubar">
+  <!-- Menu Bar -->
+  <div class="eclipse-menubar">
     <% const links = {
-         'File':'/', 'Configure':'/institution', 'System Operations':'/simulator',
-         'Customer Management':'/', 'Edit':'#', 'View':'#', 'Window':'#', 'Help':'#'
+         'File': '/', 'Configure': '/institution', 'System Operations': '/simulator',
+         'Customer Management': '/', 'Edit': '#', 'View': '#', 'Window': '#', 'Help': '#'
        }; %>
     <% menus.forEach(function(m){ %>
       <a class="mi" href="<%= links[m] || '#' %>"><%- m.replace(/^(.)/, '<u>$1</u>') %></a>
     <% }); %>
   </div>
 
-  <div class="toolbar">
+  <!-- Toolbar -->
+  <div class="eclipse-toolbar">
     <a class="tb" href="/institution" title="Institution">🏦</a>
-    <a class="tb" href="/host" title="Host / Interchange">🖧</a>
-    <a class="tb" href="/prefix" title="Prefix">🔢</a>
-    <a class="tb" href="/routing" title="Routing">🔀</a>
+    <a class="tb" href="/host"        title="Host / Interchange">🖧</a>
+    <a class="tb" href="/prefix"      title="Prefix">🔢</a>
+    <a class="tb" href="/routing"     title="Routing">🔀</a>
     <span class="sep"></span>
-    <a class="tb" href="/simulator" title="Transaction Simulator">▶</a>
+    <a class="tb" href="/simulator"   title="Transaction Simulator">▶</a>
     <span class="sep"></span>
-    <a class="tb" href="/" title="Desktop">🏠</a>
+    <a class="tb" href="/"            title="Dashboard">🏠</a>
+    <span class="tb-spacer"></span>
+    <div class="persp-bar">
+      <span class="persp active" title="BASE24-eps Perspective">🔌</span>
+      <span class="persp"        title="Debug Perspective">🐛</span>
+      <span class="persp"        title="Database Perspective">🗄</span>
+    </div>
   </div>
 
-  <div class="mdi">
+  <!-- Workbench -->
+  <div class="eclipse-workbench">
+
+    <!-- Package Explorer -->
+    <div class="eclipse-sidebar">
+      <div class="view-header">
+        <span class="view-title">Package Explorer</span>
+        <span class="view-btn" title="Collapse All">&#8613;</span>
+        <span class="view-btn" title="Menu">&#8942;</span>
+      </div>
+      <div class="view-content">
+        <div class="tree-project">&#128193; Mobilpymes</div>
+        <a class="tree-item<%= active === 'Institution'       ? ' active' : '' %>" href="/institution">
+          <span class="ico">&#128203;</span> Institution
+        </a>
+        <a class="tree-item<%= active === 'Host/Interchange'  ? ' active' : '' %>" href="/host">
+          <span class="ico">&#128423;</span> Host / Interchange
+        </a>
+        <a class="tree-item<%= active === 'Prefix'            ? ' active' : '' %>" href="/prefix">
+          <span class="ico">&#128290;</span> Prefix
+        </a>
+        <a class="tree-item<%= active === 'Routing'           ? ' active' : '' %>" href="/routing">
+          <span class="ico">&#128256;</span> Routing
+        </a>
+        <a class="tree-item<%= active === 'System Operations' ? ' active' : '' %>" href="/simulator">
+          <span class="ico">&#9654;</span> Transaction Simulator
+        </a>
+      </div>
+    </div>
+
+    <!-- Editor Area -->
+    <div class="eclipse-editor-area">
+
+      <!-- Editor Tab Strip -->
+      <div class="editor-tabstrip">
+        <div class="editor-tab active">
+          <span>&#128203;</span>
+          <%= title || 'Dashboard' %>
+          <span class="tab-close">&#10005;</span>
+        </div>
+      </div>
+
+      <!-- Editor Content -->
+      <div class="editor-content">
