@@ -84,7 +84,6 @@ app.post('/login', async (req, res) => {
     }
     await db.run('UPDATE users SET last_login=NOW() WHERE id=$1', [user.id]);
     req.session.user = { id: user.id, username: user.username, email: user.email, role: user.role };
-    // Explicitly save session before redirect so the cookie is written in serverless envs
     req.session.save((err) => {
       if (err) return res.render('login', { error: 'Error de sesión: ' + err.message, username });
       res.redirect('/');
@@ -104,16 +103,20 @@ app.use(requireAuth);
 // ─── Desktop ─────────────────────────────────────────────────────────────────
 app.get('/', async (req, res) => {
   try {
-    const [inst, hosts, prefixes, routing, journal] = await Promise.all([
+    const [inst, hosts, prefixes, routing, journal, limits, cards] = await Promise.all([
       db.get('SELECT COUNT(*) AS n FROM institutions'),
       db.get('SELECT COUNT(*) AS n FROM hosts'),
       db.get('SELECT COUNT(*) AS n FROM prefixes'),
       db.get('SELECT COUNT(*) AS n FROM routing_profiles'),
       db.get('SELECT COUNT(*) AS n FROM journal'),
+      db.get('SELECT COUNT(*) AS n FROM limit_profiles'),
+      db.get('SELECT COUNT(*) AS n FROM cards'),
     ]);
     const counts = {
       institutions: Number(inst.n), hosts: Number(hosts.n),
-      prefixes: Number(prefixes.n), routing: Number(routing.n), journal: Number(journal.n),
+      prefixes: Number(prefixes.n), routing: Number(routing.n),
+      journal: Number(journal.n), limits: Number(limits.n),
+      cards: Number(cards.n),
     };
     render(res, 'desktop', { active: '', title: 'EPS Development - ESNCService', counts });
   } catch (err) { res.status(500).send(err.message); }
@@ -129,8 +132,10 @@ app.get('/institution', async (req, res) => {
     const contacts = sel
       ? await db.all('SELECT * FROM contacts WHERE institution_ref=$1', [sel.id])
       : [];
+    const routingProfiles = (await db.all('SELECT name FROM routing_profiles ORDER BY name'))
+      .map((r) => r.name);
     render(res, 'institution', { active: 'Institution', title: 'Institution Configuration',
-      list, sel, contacts, tab: req.query.tab || 'address' });
+      list, sel, contacts, routingProfiles, tab: req.query.tab || 'address' });
   } catch (err) { res.status(500).send(err.message); }
 });
 
@@ -139,21 +144,48 @@ app.post('/institution', async (req, res) => {
     const b = req.body;
     const exists = await db.get('SELECT id FROM institutions WHERE institution_id=$1', [b.institution_id]);
     const msg = `2 - Successful save of Institution ID ${b.institution_id}.`;
+    const vals = [b.institution_number, b.institution_name, b.issuer_type||'Institution',
+      b.addr_line1, b.addr_line2, b.city, b.country,
+      b.postal_code, b.state_province,
+      b.timezone||'UTC', b.currency_code||'840',
+      b.destination_routing_profile||null, b.cutover_time||'12:00 am', msg];
     if (exists) {
       await db.run(`UPDATE institutions SET institution_number=$1, institution_name=$2,
         issuer_type=$3, addr_line1=$4, addr_line2=$5, city=$6, country=$7,
-        postal_code=$8, state_province=$9, status_msg=$10 WHERE institution_id=$11`,
-        [b.institution_number, b.institution_name, b.issuer_type||'Institution',
-         b.addr_line1, b.addr_line2, b.city, b.country,
-         b.postal_code, b.state_province, msg, b.institution_id]);
+        postal_code=$8, state_province=$9, timezone=$10, currency_code=$11,
+        destination_routing_profile=$12, cutover_time=$13, status_msg=$14
+        WHERE institution_id=$15`,
+        [...vals, b.institution_id]);
     } else {
       await db.run(`INSERT INTO institutions (institution_id, institution_number, institution_name,
-        issuer_type, addr_line1, addr_line2, city, country, postal_code, state_province, status_msg)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
-        [b.institution_id, b.institution_number, b.institution_name, b.issuer_type||'Institution',
-         b.addr_line1, b.addr_line2, b.city, b.country, b.postal_code, b.state_province, msg]);
+        issuer_type, addr_line1, addr_line2, city, country, postal_code, state_province,
+        timezone, currency_code, destination_routing_profile, cutover_time, status_msg)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+        [b.institution_id, ...vals]);
     }
     res.redirect('/institution?id=' + encodeURIComponent(b.institution_id));
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+app.post('/institution/contact/add', async (req, res) => {
+  try {
+    const b = req.body;
+    const inst = await db.get('SELECT id FROM institutions WHERE institution_id=$1', [b.institution_id]);
+    if (inst) {
+      await db.run(
+        'INSERT INTO contacts (institution_ref, contact, phone, email, comments) VALUES ($1,$2,$3,$4,$5)',
+        [inst.id, b.contact, b.phone, b.email, b.comments]);
+    }
+    res.redirect('/institution?id=' + encodeURIComponent(b.institution_id) + '&tab=address');
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+app.post('/institution/contact/delete', async (req, res) => {
+  try {
+    const c = await db.get('SELECT institution_ref FROM contacts WHERE id=$1', [req.body.contact_id]);
+    await db.run('DELETE FROM contacts WHERE id=$1', [req.body.contact_id]);
+    const inst = c ? await db.get('SELECT institution_id FROM institutions WHERE id=$1', [c.institution_ref]) : null;
+    res.redirect('/institution' + (inst ? '?id=' + encodeURIComponent(inst.institution_id) : ''));
   } catch (err) { res.status(500).send(err.message); }
 });
 
@@ -221,8 +253,10 @@ app.get('/prefix', async (req, res) => {
       : list[0];
     const issuers = await db.all(
       'SELECT institution_id, institution_name FROM institutions ORDER BY institution_id');
+    const hosts   = (await db.all('SELECT interface_name FROM hosts ORDER BY interface_name'))
+      .map((h) => h.interface_name);
     render(res, 'prefix', { active: 'Prefix', title: 'Prefix Configuration',
-      list, sel, issuers, tab: req.query.tab || 'processing' });
+      list, sel, issuers, hosts, tab: req.query.tab || 'processing' });
   } catch (err) { res.status(500).send(err.message); }
 });
 
@@ -230,17 +264,20 @@ app.post('/prefix', async (req, res) => {
   try {
     const b = req.body;
     const vals = [b.prefix, Number(b.pan_length||16), b.issuer_id, b.prefix_type, b.route_type,
+                  b.destination_routing_profile||null,
                   b.member_number_on_track?1:0, b.include_holds?1:0,
                   b.expiration_check_option, b.fraud_option, Number(b.max_pin_retry||3)];
     if (b.id) {
       await db.run(`UPDATE prefixes SET prefix=$1, pan_length=$2, issuer_id=$3, prefix_type=$4,
-        route_type=$5, member_number_on_track=$6, include_holds=$7, expiration_check_option=$8,
-        fraud_option=$9, max_pin_retry=$10 WHERE id=$11`, [...vals, b.id]);
+        route_type=$5, destination_routing_profile=$6, member_number_on_track=$7, include_holds=$8,
+        expiration_check_option=$9, fraud_option=$10, max_pin_retry=$11 WHERE id=$12`,
+        [...vals, b.id]);
       res.redirect('/prefix?id=' + b.id);
     } else {
       const row = await db.run(`INSERT INTO prefixes (prefix, pan_length, issuer_id, prefix_type,
-        route_type, member_number_on_track, include_holds, expiration_check_option,
-        fraud_option, max_pin_retry) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`, vals);
+        route_type, destination_routing_profile, member_number_on_track, include_holds,
+        expiration_check_option, fraud_option, max_pin_retry)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`, vals);
       res.redirect('/prefix?id=' + row.id);
     }
   } catch (err) { res.status(500).send(err.message); }
@@ -263,9 +300,12 @@ app.get('/routing', async (req, res) => {
     const dests   = sel
       ? await db.all('SELECT * FROM routing_destinations WHERE profile_ref=$1 ORDER BY seq', [sel.id])
       : [];
-    const hosts   = (await db.all('SELECT interface_name FROM hosts ORDER BY interface_name')).map((h) => h.interface_name);
-    const limits  = (await db.all('SELECT name FROM limit_profiles ORDER BY name')).map((l) => l.name);
-    const issuers = (await db.all('SELECT institution_id FROM institutions ORDER BY institution_id')).map((i) => i.institution_id);
+    const hosts   = (await db.all('SELECT interface_name FROM hosts ORDER BY interface_name'))
+      .map((h) => h.interface_name);
+    const limits  = (await db.all('SELECT name FROM limit_profiles ORDER BY name'))
+      .map((l) => l.name);
+    const issuers = (await db.all('SELECT institution_id FROM institutions ORDER BY institution_id'))
+      .map((i) => i.institution_id);
     render(res, 'routing', { active: 'Routing', title: 'Source Routing Profile',
       list, sel, dests, hosts, limits, issuers });
   } catch (err) { res.status(500).send(err.message); }
@@ -294,10 +334,11 @@ app.post('/routing/destination', async (req, res) => {
     const row = await db.get(
       'SELECT COALESCE(MAX(seq),0) AS m FROM routing_destinations WHERE profile_ref=$1', [b.profile_ref]);
     await db.run(`INSERT INTO routing_destinations (profile_ref,seq,destination_routing_profile,
-      issuer_id,limit_profile,issuer_surcharge_profile,instrument_type,route_type)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-      [b.profile_ref, Number(row.m)+1, b.destination_routing_profile, b.issuer_id,
-       b.limit_profile, b.issuer_surcharge_profile, b.instrument_type, b.route_type]);
+      issuer_id,txn_code,limit_profile,issuer_surcharge_profile,instrument_type,route_type)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+      [b.profile_ref, Number(row.m)+1, b.destination_routing_profile, b.issuer_id||null,
+       b.txn_code||'Any', b.limit_profile, b.issuer_surcharge_profile||null,
+       b.instrument_type, b.route_type]);
     res.redirect('/routing?id=' + b.profile_ref);
   } catch (err) { res.status(500).send(err.message); }
 });
@@ -307,6 +348,142 @@ app.post('/routing/destination/delete', async (req, res) => {
     const d = await db.get('SELECT profile_ref FROM routing_destinations WHERE id=$1', [req.body.id]);
     await db.run('DELETE FROM routing_destinations WHERE id=$1', [req.body.id]);
     res.redirect('/routing?id=' + (d ? d.profile_ref : ''));
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+app.post('/routing/delete', async (req, res) => {
+  try {
+    await db.run('DELETE FROM routing_profiles WHERE id=$1', [req.body.id]);
+    res.redirect('/routing');
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+// ─── Limit Profiles ───────────────────────────────────────────────────────────
+app.get('/limit', async (req, res) => {
+  try {
+    const list = await db.all('SELECT * FROM limit_profiles ORDER BY name');
+    const sel  = req.query.id
+      ? await db.get('SELECT * FROM limit_profiles WHERE id=$1', [req.query.id])
+      : list[0];
+    render(res, 'limit', { active: 'Limit Profiles', title: 'Limit Profile Configuration',
+      list, sel, msg: req.query.msg||null });
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+app.post('/limit', async (req, res) => {
+  try {
+    const b = req.body;
+    const vals = [b.name, b.description||null, b.currency_code||'USD',
+      Number(b.min_amount||0), Number(b.max_amount_per_txn||1000000),
+      Number(b.daily_amount_limit||1000000), Number(b.daily_count_limit||9999),
+      b.period_type||'Rolling Daily'];
+    if (b.id) {
+      await db.run(`UPDATE limit_profiles SET name=$1, description=$2, currency_code=$3,
+        min_amount=$4, max_amount_per_txn=$5, daily_amount_limit=$6,
+        daily_count_limit=$7, period_type=$8 WHERE id=$9`,
+        [...vals, b.id]);
+      res.redirect('/limit?id=' + b.id + '&msg=Saved');
+    } else {
+      const row = await db.run(`INSERT INTO limit_profiles
+        (name,description,currency_code,min_amount,max_amount_per_txn,daily_amount_limit,daily_count_limit,period_type)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`, vals);
+      res.redirect('/limit?id=' + row.id + '&msg=Created');
+    }
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+app.post('/limit/delete', async (req, res) => {
+  try {
+    await db.run('DELETE FROM limit_profiles WHERE id=$1', [req.body.id]);
+    res.redirect('/limit');
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+// ─── Cards / Customer Management ─────────────────────────────────────────────
+app.get('/cards', async (req, res) => {
+  try {
+    const list    = await db.all('SELECT * FROM cards ORDER BY pan');
+    const sel     = req.query.pan
+      ? await db.get('SELECT * FROM cards WHERE pan=$1', [req.query.pan])
+      : list[0];
+    const accounts = sel
+      ? await db.all('SELECT * FROM accounts WHERE card_pan=$1 ORDER BY account_type', [sel.pan])
+      : [];
+    const issuers = await db.all(
+      'SELECT institution_id, institution_name FROM institutions ORDER BY institution_id');
+    const limits  = (await db.all('SELECT name FROM limit_profiles ORDER BY name'))
+      .map((l) => l.name);
+    render(res, 'cards', { active: 'Cards', title: 'Card Configuration',
+      list, sel, accounts, issuers, limits,
+      msg: req.query.msg||null, error: req.query.error||null });
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+app.post('/cards', async (req, res) => {
+  try {
+    const b = req.body;
+    if (!b.pan || b.pan.replace(/\D/g, '').length < 12) {
+      return res.redirect('/cards?error=' + encodeURIComponent('PAN inválido (mínimo 12 dígitos).'));
+    }
+    const pan = b.pan.replace(/\D/g, '');
+    const vals = [pan, b.cardholder_name||null, b.expiry_date||null,
+      b.card_type||'Debit', b.status||'Active', b.issuer_id||null,
+      b.limit_profile||'LMT_STD', b.account_type1||'Savings', b.account_type2||'Checking'];
+    const exists = await db.get('SELECT id FROM cards WHERE pan=$1', [pan]);
+    if (exists) {
+      await db.run(`UPDATE cards SET cardholder_name=$2, expiry_date=$3, card_type=$4,
+        status=$5, issuer_id=$6, limit_profile=$7, account_type1=$8, account_type2=$9
+        WHERE pan=$1`, vals);
+      if (b.status === 'Active') {
+        await db.run('UPDATE cards SET pin_retries=0 WHERE pan=$1', [pan]);
+      }
+    } else {
+      await db.run(`INSERT INTO cards (pan, cardholder_name, expiry_date, card_type, status,
+        issuer_id, limit_profile, account_type1, account_type2) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+        vals);
+    }
+    res.redirect('/cards?pan=' + encodeURIComponent(pan) + '&msg=' + encodeURIComponent('Card saved.'));
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+app.post('/cards/account', async (req, res) => {
+  try {
+    const b = req.body;
+    const exists = await db.get('SELECT id FROM accounts WHERE account_id=$1', [b.account_id]);
+    const vals = [b.account_id, b.card_pan, b.account_type||'Savings',
+      b.status||'Active', Number(b.available_bal||0), Number(b.ledger_bal||0),
+      b.currency_code||'USD', b.limit_profile||null];
+    if (exists) {
+      await db.run(`UPDATE accounts SET account_type=$3, status=$4, available_bal=$5,
+        ledger_bal=$6, currency_code=$7, limit_profile=$8 WHERE account_id=$1`, vals);
+    } else {
+      await db.run(`INSERT INTO accounts (account_id, card_pan, account_type, status,
+        available_bal, ledger_bal, currency_code, limit_profile)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`, vals);
+    }
+    res.redirect('/cards?pan=' + encodeURIComponent(b.card_pan) + '&msg=' + encodeURIComponent('Account saved.'));
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+app.post('/cards/account/delete', async (req, res) => {
+  try {
+    const acct = await db.get('SELECT card_pan FROM accounts WHERE id=$1', [req.body.id]);
+    await db.run('DELETE FROM accounts WHERE id=$1', [req.body.id]);
+    res.redirect('/cards?pan=' + encodeURIComponent(acct ? acct.card_pan : ''));
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+app.post('/cards/delete', async (req, res) => {
+  try {
+    await db.run('DELETE FROM cards WHERE pan=$1', [req.body.pan]);
+    res.redirect('/cards');
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+app.post('/cards/unblock', async (req, res) => {
+  try {
+    await db.run(`UPDATE cards SET status='Active', pin_retries=0 WHERE pan=$1`, [req.body.pan]);
+    res.redirect('/cards?pan=' + encodeURIComponent(req.body.pan) + '&msg=' + encodeURIComponent('Card unblocked.'));
   } catch (err) { res.status(500).send(err.message); }
 });
 
@@ -326,7 +503,11 @@ app.get('/simulator', async (req, res) => {
 app.post('/simulator', async (req, res) => {
   try {
     const b = req.body;
-    const result = await authorize({ pan: b.pan, amount: Number(b.amount), txn_type: b.txn_type, source: b.source });
+    const result = await authorize({
+      pan: b.pan, amount: Number(b.amount),
+      txn_type: b.txn_type, source: b.source,
+      wrong_pin: b.wrong_pin === '1',
+    });
     const [journal, prefixes] = await Promise.all([
       db.all('SELECT * FROM journal ORDER BY id DESC LIMIT 50'),
       db.all('SELECT * FROM prefixes ORDER BY prefix'),
@@ -343,10 +524,11 @@ app.post('/simulator/clear', async (req, res) => {
   } catch (err) { res.status(500).send(err.message); }
 });
 
-// ─── Profile (any authenticated user) ────────────────────────────────────────
+// ─── Profile ─────────────────────────────────────────────────────────────────
 app.get('/profile', async (req, res) => {
   try {
-    const user = await db.get('SELECT id,username,email,role,active,last_login,created_at FROM users WHERE id=$1',
+    const user = await db.get(
+      'SELECT id,username,email,role,active,last_login,created_at FROM users WHERE id=$1',
       [req.session.user.id]);
     render(res, 'profile', { active: 'Profile', title: 'My Profile', user, msg: null, error: null });
   } catch (err) { res.status(500).send(err.message); }
@@ -355,7 +537,8 @@ app.get('/profile', async (req, res) => {
 app.post('/profile/password', async (req, res) => {
   const { current_password, new_password, confirm_password } = req.body;
   const renderProfile = async (error, msg) => {
-    const user = await db.get('SELECT id,username,email,role,active,last_login,created_at FROM users WHERE id=$1',
+    const user = await db.get(
+      'SELECT id,username,email,role,active,last_login,created_at FROM users WHERE id=$1',
       [req.session.user.id]);
     render(res, 'profile', { active: 'Profile', title: 'My Profile', user, msg, error });
   };
@@ -434,6 +617,7 @@ app.post('/api/authorize', async (req, res) => {
     res.json(await authorize({
       pan: req.body.pan, amount: Number(req.body.amount),
       txn_type: req.body.txn_type, source: req.body.source,
+      wrong_pin: !!req.body.wrong_pin,
     }));
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

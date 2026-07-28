@@ -30,7 +30,7 @@ const db = {
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 async function initSchema() {
-  // Session store table (required by connect-pg-simple)
+  // Session store
   await pool.query(`
     CREATE TABLE IF NOT EXISTS "session" (
       "sid"    VARCHAR   NOT NULL COLLATE "default",
@@ -38,8 +38,7 @@ async function initSchema() {
       "expire" TIMESTAMP NOT NULL,
       PRIMARY KEY ("sid")
     )`);
-  await pool.query(`
-    CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire")`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire")`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
@@ -56,18 +55,30 @@ async function initSchema() {
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS institutions (
-      id                 SERIAL PRIMARY KEY,
-      institution_id     TEXT UNIQUE NOT NULL,
-      institution_number TEXT,
-      institution_name   TEXT,
-      issuer_type        TEXT DEFAULT 'Institution',
-      addr_line1         TEXT, addr_line2 TEXT,
-      city               TEXT, country TEXT,
-      postal_code        TEXT, state_province TEXT,
-      settings_json      TEXT DEFAULT '{}',
-      status_msg         TEXT DEFAULT '',
-      created_at         TIMESTAMP DEFAULT NOW()
+      id                      SERIAL PRIMARY KEY,
+      institution_id          TEXT UNIQUE NOT NULL,
+      institution_number      TEXT,
+      institution_name        TEXT,
+      issuer_type             TEXT DEFAULT 'Institution',
+      addr_line1              TEXT, addr_line2 TEXT,
+      city                    TEXT, country TEXT,
+      postal_code             TEXT, state_province TEXT,
+      timezone                TEXT DEFAULT 'UTC',
+      currency_code           TEXT DEFAULT '840',
+      destination_routing_profile TEXT,
+      cutover_time            TEXT DEFAULT '12:00 am',
+      settings_json           TEXT DEFAULT '{}',
+      status_msg              TEXT DEFAULT '',
+      created_at              TIMESTAMP DEFAULT NOW()
     )`);
+
+  // Migrate: add columns if they don't exist
+  for (const col of [
+    `ALTER TABLE institutions ADD COLUMN IF NOT EXISTS timezone TEXT DEFAULT 'UTC'`,
+    `ALTER TABLE institutions ADD COLUMN IF NOT EXISTS currency_code TEXT DEFAULT '840'`,
+    `ALTER TABLE institutions ADD COLUMN IF NOT EXISTS destination_routing_profile TEXT`,
+    `ALTER TABLE institutions ADD COLUMN IF NOT EXISTS cutover_time TEXT DEFAULT '12:00 am'`,
+  ]) { await pool.query(col).catch(() => {}); }
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS contacts (
@@ -98,31 +109,43 @@ async function initSchema() {
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS prefixes (
-      id                      SERIAL PRIMARY KEY,
-      prefix                  TEXT NOT NULL,
-      pan_length              INTEGER DEFAULT 16,
-      issuer_id               TEXT,
-      prefix_type             TEXT DEFAULT 'On-Us',
-      route_type              TEXT DEFAULT 'Acquirer and Issuer',
-      member_number_on_track  INTEGER DEFAULT 0,
-      include_holds           INTEGER DEFAULT 0,
-      expiration_check_option TEXT DEFAULT '{none}',
-      fraud_option            TEXT DEFAULT 'Do Not Use Fraud System',
-      max_pin_retry           INTEGER DEFAULT 3,
-      created_at              TIMESTAMP DEFAULT NOW()
+      id                          SERIAL PRIMARY KEY,
+      prefix                      TEXT NOT NULL,
+      pan_length                  INTEGER DEFAULT 16,
+      issuer_id                   TEXT,
+      prefix_type                 TEXT DEFAULT 'On-Us',
+      route_type                  TEXT DEFAULT 'Acquirer and Issuer',
+      destination_routing_profile TEXT,
+      member_number_on_track      INTEGER DEFAULT 0,
+      include_holds               INTEGER DEFAULT 0,
+      expiration_check_option     TEXT DEFAULT '{none}',
+      fraud_option                TEXT DEFAULT 'Do Not Use Fraud System',
+      max_pin_retry               INTEGER DEFAULT 3,
+      created_at                  TIMESTAMP DEFAULT NOW()
     )`);
+  await pool.query(
+    `ALTER TABLE prefixes ADD COLUMN IF NOT EXISTS destination_routing_profile TEXT`
+  ).catch(() => {});
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS limit_profiles (
       id                 SERIAL PRIMARY KEY,
       name               TEXT UNIQUE NOT NULL,
       description        TEXT,
+      currency_code      TEXT DEFAULT 'USD',
       min_amount         NUMERIC DEFAULT 0,
       max_amount_per_txn NUMERIC DEFAULT 1000000,
       daily_amount_limit NUMERIC DEFAULT 1000000,
       daily_count_limit  INTEGER DEFAULT 9999,
+      period_type        TEXT DEFAULT 'Rolling Daily',
       created_at         TIMESTAMP DEFAULT NOW()
     )`);
+  await pool.query(
+    `ALTER TABLE limit_profiles ADD COLUMN IF NOT EXISTS currency_code TEXT DEFAULT 'USD'`
+  ).catch(() => {});
+  await pool.query(
+    `ALTER TABLE limit_profiles ADD COLUMN IF NOT EXISTS period_type TEXT DEFAULT 'Rolling Daily'`
+  ).catch(() => {});
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS routing_profiles (
@@ -139,10 +162,45 @@ async function initSchema() {
       seq                         INTEGER DEFAULT 1,
       destination_routing_profile TEXT,
       issuer_id                   TEXT,
+      txn_code                    TEXT DEFAULT 'Any',
       limit_profile               TEXT,
       issuer_surcharge_profile    TEXT,
       instrument_type             TEXT DEFAULT 'ATM',
       route_type                  TEXT DEFAULT 'Acquirer & Issuer'
+    )`);
+  await pool.query(
+    `ALTER TABLE routing_destinations ADD COLUMN IF NOT EXISTS txn_code TEXT DEFAULT 'Any'`
+  ).catch(() => {});
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS cards (
+      id              SERIAL PRIMARY KEY,
+      pan             TEXT UNIQUE NOT NULL,
+      cardholder_name TEXT,
+      expiry_date     TEXT,
+      card_type       TEXT DEFAULT 'Debit',
+      status          TEXT DEFAULT 'Active',
+      issuer_id       TEXT,
+      limit_profile   TEXT DEFAULT 'LMT_STD',
+      account_type1   TEXT DEFAULT 'Savings',
+      account_type2   TEXT DEFAULT 'Checking',
+      pin_retries     INTEGER DEFAULT 0,
+      max_pin_retry   INTEGER DEFAULT 3,
+      created_at      TIMESTAMP DEFAULT NOW()
+    )`);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS accounts (
+      id              SERIAL PRIMARY KEY,
+      account_id      TEXT UNIQUE NOT NULL,
+      card_pan        TEXT REFERENCES cards(pan) ON DELETE CASCADE,
+      account_type    TEXT DEFAULT 'Savings',
+      status          TEXT DEFAULT 'Active',
+      available_bal   NUMERIC DEFAULT 0.00,
+      ledger_bal      NUMERIC DEFAULT 0.00,
+      currency_code   TEXT DEFAULT 'USD',
+      limit_profile   TEXT,
+      created_at      TIMESTAMP DEFAULT NOW()
     )`);
 
   await pool.query(`
@@ -156,6 +214,7 @@ async function initSchema() {
       prefix_matched TEXT,
       issuer_id      TEXT,
       on_us          INTEGER,
+      card_status    TEXT,
       limit_profile  TEXT,
       limit_result   TEXT,
       routed_to      TEXT,
@@ -164,6 +223,9 @@ async function initSchema() {
       steps_json     TEXT DEFAULT '[]',
       created_at     TIMESTAMP DEFAULT NOW()
     )`);
+  await pool.query(
+    `ALTER TABLE journal ADD COLUMN IF NOT EXISTS card_status TEXT`
+  ).catch(() => {});
 }
 
 // ─── Seed ────────────────────────────────────────────────────────────────────
@@ -178,30 +240,37 @@ async function seedIfEmpty() {
     console.log('Usuario admin creado: admin / Admin123!');
   }
 
-  // Demo data
   const count = await db.get('SELECT COUNT(*) AS n FROM institutions');
   if (Number(count.n) > 0) return;
 
+  // ── Institutions ─────────────────────────────────────────────────────────
   const bnk1 = await db.run(`
     INSERT INTO institutions (institution_id, institution_number, institution_name, issuer_type,
-      addr_line1, city, country, postal_code, state_province, status_msg)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
+      addr_line1, city, country, postal_code, state_province, timezone, currency_code,
+      cutover_time, status_msg)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id`,
     ['BNK1','10000000123','FIRSTSTATEBANK','Institution',
-     '100 Main Street','Omaha','US','68102','NE',
-     '2 - Successful view of Institution ID BNK1.']);
+     '100 Main Street','Omaha','US','68102','NE','CST','840',
+     '12:00 am','2 - Successful view of Institution ID BNK1.']);
 
-  await db.run(`
+  const pcba = await db.run(`
     INSERT INTO institutions (institution_id, institution_number, institution_name, issuer_type,
-      addr_line1, city, country, postal_code, state_province, status_msg)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+      addr_line1, city, country, postal_code, state_province, timezone, currency_code,
+      cutover_time, status_msg)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id`,
     ['PCBA_INST','20000000456','POS CARD INSTITUTION','Institution',
-     '55 Market Ave','Dallas','US','75201','TX',
-     '2 - Successful view of Institution ID PCBA_INST.']);
+     '55 Market Ave','Dallas','US','75201','TX','CST','840',
+     '12:00 am','2 - Successful view of Institution ID PCBA_INST.']);
 
   await db.run(
     'INSERT INTO contacts (institution_ref, contact, phone, email, comments) VALUES ($1,$2,$3,$4,$5)',
-    [bnk1.id,'Operations Desk','+1 402 555 0100','ops@firststatebank.example','Primary']);
+    [bnk1.id,'Operations Desk','+1 402 555 0100','ops@firststatebank.example','Primary contact']);
 
+  await db.run(
+    'INSERT INTO contacts (institution_ref, contact, phone, email, comments) VALUES ($1,$2,$3,$4,$5)',
+    [pcba.id,'Help Desk','+1 214 555 0200','help@pcba.example','24x7 Support']);
+
+  // ── Hosts ─────────────────────────────────────────────────────────────────
   await db.run(`
     INSERT INTO hosts (interface_name, kind, cutover_time, time_offset, statistics_interval,
       settlement_days, source_routing_profile, acquirer_txn_profile, issuer_txn_profile,
@@ -217,37 +286,92 @@ async function seedIfEmpty() {
     ['STAR_HOST','Host','12:00 am','5-Day','STAR_SRC',
      'QA_ACQ_TXN','QA_ISS_ALL','CTX_STAR','MSG_STAR','ACT_CDE_STAR']);
 
-  for (const [p, l, i, t, r] of [
-    ['160107',16,'PCBA_INST','On-Us','Acquirer and Issuer'],
-    ['510510',16,'BNK1',     'On-Us','Acquirer and Issuer'],
-    ['400000',16,'BNK1',     'Not-On-Us','Issuer only'],
+  await db.run(`
+    INSERT INTO hosts (interface_name, kind, cutover_time, settlement_days, source_routing_profile,
+      acquirer_txn_profile, issuer_txn_profile, context_profile, iso_message_profile, action_code_profile)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+    ['MASTERCARD_BNET','Interchange','12:00 am','7-Day','STAR_SRC',
+     'QA_ACQ_TXN','QA_ISS_ALL','CTX_MC','MSG_MC','ACT_CDE_MC']);
+
+  // ── Prefixes ──────────────────────────────────────────────────────────────
+  for (const [p, l, i, t, r, drp] of [
+    ['160107',16,'PCBA_INST','On-Us',     'Acquirer and Issuer', null],
+    ['510510',16,'BNK1',     'On-Us',     'Acquirer and Issuer', null],
+    ['400000',16,'BNK1',     'Not-On-Us', 'Acquirer and Issuer', 'VISA_BASE1'],
+    ['222100',16,'PCBA_INST','Not-On-Us', 'Issuer only',         'MASTERCARD_BNET'],
   ]) {
     await db.run(
-      'INSERT INTO prefixes (prefix,pan_length,issuer_id,prefix_type,route_type) VALUES ($1,$2,$3,$4,$5)',
-      [p,l,i,t,r]);
+      `INSERT INTO prefixes (prefix,pan_length,issuer_id,prefix_type,route_type,destination_routing_profile)
+       VALUES ($1,$2,$3,$4,$5,$6)`, [p,l,i,t,r,drp]);
   }
 
+  // ── Limit Profiles ────────────────────────────────────────────────────────
   await db.run(
-    'INSERT INTO limit_profiles (name,description,min_amount,max_amount_per_txn,daily_amount_limit,daily_count_limit) VALUES ($1,$2,$3,$4,$5,$6)',
-    ['LMT_STD','Standard ATM/POS limits',1,500,2000,10]);
+    `INSERT INTO limit_profiles (name,description,currency_code,min_amount,max_amount_per_txn,daily_amount_limit,daily_count_limit,period_type)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+    ['LMT_STD','Standard ATM/POS limits','USD',1,500,2000,10,'Rolling Daily']);
   await db.run(
-    'INSERT INTO limit_profiles (name,description,min_amount,max_amount_per_txn,daily_amount_limit,daily_count_limit) VALUES ($1,$2,$3,$4,$5,$6)',
-    ['LMT_VIP','High limits',1,5000,20000,40]);
+    `INSERT INTO limit_profiles (name,description,currency_code,min_amount,max_amount_per_txn,daily_amount_limit,daily_count_limit,period_type)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+    ['LMT_VIP','High-value cardholder limits','USD',1,5000,20000,40,'Rolling Daily']);
+  await db.run(
+    `INSERT INTO limit_profiles (name,description,currency_code,min_amount,max_amount_per_txn,daily_amount_limit,daily_count_limit,period_type)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+    ['LMT_POS','POS Purchase limits','USD',0.01,2000,5000,25,'Rolling Daily']);
+  await db.run(
+    `INSERT INTO limit_profiles (name,description,currency_code,min_amount,max_amount_per_txn,daily_amount_limit,daily_count_limit,period_type)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+    ['LMT_INTL','International transaction limits','USD',1,1000,3000,8,'Rolling Daily']);
 
+  // ── Routing Profiles ──────────────────────────────────────────────────────
   const src = await db.run(
     'INSERT INTO routing_profiles (name,description) VALUES ($1,$2) RETURNING id',
-    ['STAR_SRC','Source Routing Profile principal']);
+    ['STAR_SRC','Main Source Routing Profile — evaluates all card types and instruments']);
 
-  for (const [seq, dest, issuer, lmt, instr, rt] of [
-    [1,'STAR_HOST','PCBA_INST','LMT_STD','ATM','Acquirer & Issuer'],
-    [2,'VISA_BASE1','BNK1',    'LMT_STD','POS','Issuer only'],
-    [3,'VISA_BASE1','',        'LMT_VIP','Any','Acquirer & Issuer'],
+  for (const [seq, dest, issuer, txn, lmt, instr, rt] of [
+    [1,'STAR_HOST',    'PCBA_INST','Any',                'LMT_STD', 'ATM',         'Acquirer & Issuer'],
+    [2,'VISA_BASE1',   'BNK1',     'Purchase',           'LMT_POS', 'POS',         'Acquirer & Issuer'],
+    [3,'MASTERCARD_BNET','',       'Any',                'LMT_INTL','Interchange', 'Acquirer & Issuer'],
+    [4,'VISA_BASE1',   '',         'Any',                'LMT_VIP', 'Any',         'Acquirer & Issuer'],
   ]) {
     await db.run(`
       INSERT INTO routing_destinations (profile_ref,seq,destination_routing_profile,issuer_id,
-        limit_profile,issuer_surcharge_profile,instrument_type,route_type)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-      [src.id,seq,dest,issuer,lmt,'',instr,rt]);
+        txn_code,limit_profile,issuer_surcharge_profile,instrument_type,route_type)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+      [src.id,seq,dest,issuer,txn,lmt,'',instr,rt]);
+  }
+
+  // ── Cards (On-Us cards for demo) ─────────────────────────────────────────
+  const cards = [
+    ['1601070000001234','JOHN DOE',      '1228','Debit',  'Active', 'PCBA_INST','LMT_STD', 'Savings','Checking'],
+    ['1601070000005678','JANE SMITH',    '0927','Debit',  'Active', 'PCBA_INST','LMT_VIP', 'Savings','Checking'],
+    ['1601070000009999','BOB BLOCKED',   '0626','Debit',  'Blocked','PCBA_INST','LMT_STD', 'Savings','Checking'],
+    ['5105100000001234','ALICE JOHNSON', '1128','Debit',  'Active', 'BNK1',     'LMT_STD', 'Savings','Checking'],
+    ['5105100000005678','CARLOS RUIZ',   '0826','Credit', 'Active', 'BNK1',     'LMT_VIP', 'Credit', 'Credit'],
+    ['5105100000009012','DIANA EXPIRED', '0124','Debit',  'Expired','BNK1',     'LMT_STD', 'Savings','Checking'],
+  ];
+  for (const [pan, name, exp, type, status, issuer, lmt, acc1, acc2] of cards) {
+    await db.run(
+      `INSERT INTO cards (pan, cardholder_name, expiry_date, card_type, status, issuer_id,
+        limit_profile, account_type1, account_type2)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+      [pan, name, exp, type, status, issuer, lmt, acc1, acc2]);
+  }
+
+  // ── Accounts (Positive Balance) ───────────────────────────────────────────
+  const acctData = [
+    ['SV-16010700001234','1601070000001234','Savings','Active', 1500.00,1500.00,'USD','LMT_STD'],
+    ['CK-16010700001234','1601070000001234','Checking','Active',  250.00,  250.00,'USD','LMT_STD'],
+    ['SV-16010700005678','1601070000005678','Savings','Active',25000.00,25000.00,'USD','LMT_VIP'],
+    ['SV-51051000001234','5105100000001234','Savings','Active',  800.00,  800.00,'USD','LMT_STD'],
+    ['CR-51051000005678','5105100000005678','Credit', 'Active', 5000.00, 4750.00,'USD','LMT_VIP'],
+  ];
+  for (const [aid, pan, atype, st, avail, ledg, cur, lmt] of acctData) {
+    await db.run(
+      `INSERT INTO accounts (account_id, card_pan, account_type, status,
+        available_bal, ledger_bal, currency_code, limit_profile)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+      [aid, pan, atype, st, avail, ledg, cur, lmt]);
   }
 }
 

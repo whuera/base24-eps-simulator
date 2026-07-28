@@ -1,47 +1,60 @@
 <%- include('partials/top') %>
 <% const s = sel || {}; %>
-<div class="mdi-window" style="max-width:660px">
-  <div class="mdi-title"><span class="ico">🔢</span> <%= s.prefix_type==='System'?'System':'On-Us' %> Prefix Configuration<%= s.prefix ? ' - ' + s.prefix : '' %>
+<div class="mdi-window" style="max-width:700px">
+  <div class="mdi-title"><span class="ico">🔢</span> <%= s.prefix_type==='System'?'System':'On-Us / Not-On-Us' %> Prefix Configuration<%= s.prefix ? ' — ' + s.prefix : '' %>
     <span class="spacer"></span>
     <span class="mini-win">_</span><span class="mini-win">▢</span><span class="mini-win close">✕</span>
   </div>
   <div class="mdi-toolbar">
-    <a class="tb" href="/prefix" title="Nuevo">🗋</a>
-    <span class="tb" title="Guardar" onclick="document.forms.pfxForm.submit()">💾</span>
-    <form method="post" action="/prefix/delete" style="display:inline" onsubmit="return confirm('¿Eliminar prefix?')">
+    <a class="tb" href="/prefix" title="New">🗋</a>
+    <span class="tb" title="Save" onclick="document.forms.pfxForm.submit()">💾</span>
+    <form method="post" action="/prefix/delete" style="display:inline" onsubmit="return confirm('Delete prefix?')">
       <input type="hidden" name="id" value="<%= s.id %>">
-      <button class="tb" title="Eliminar" style="border:none;background:none">🗑</button>
+      <button class="tb" style="border:none;background:none">🗑</button>
     </form>
   </div>
 
   <form method="post" action="/prefix" name="pfxForm">
   <input type="hidden" name="id" value="<%= s.id||'' %>">
   <div class="mdi-body">
-    <div class="form-row">
-      <label>Prefix</label>
-      <input class="med" type="text" name="prefix" value="<%= s.prefix||'' %>">
-      <label style="min-width:75px">PAN Length</label>
-      <input class="short" type="text" name="pan_length" value="<%= s.pan_length||16 %>">
+    <!-- Header fields -->
+    <div style="display:flex; gap:8px; align-items:flex-end; margin-bottom:8px">
+      <div class="form-row" style="flex:0 0 auto; margin-bottom:0">
+        <label>Prefix (BIN)</label>
+        <input class="med" type="text" name="prefix" value="<%= s.prefix||'' %>" placeholder="e.g. 160107">
+      </div>
+      <div class="form-row" style="flex:0 0 auto; margin-bottom:0">
+        <label>PAN Length</label>
+        <input class="short" type="number" name="pan_length" value="<%= s.pan_length||16 %>">
+      </div>
       <select class="med" onchange="location.href='/prefix?id='+this.value">
-        <option value="">— abrir —</option>
+        <option value="">— open —</option>
         <% list.forEach(function(p){ %>
-          <option value="<%= p.id %>" <%= s.id==p.id?'selected':'' %>><%= p.prefix %> (<%= p.prefix_type %>)</option>
+          <option value="<%= p.id %>" <%= s.id==p.id?'selected':'' %>>
+            <%= p.prefix %> (<%= p.prefix_type %> — <%= p.issuer_id %>)
+          </option>
         <% }); %>
       </select>
     </div>
-    <div class="form-row req">
+    <div class="form-row req" style="margin-bottom:10px">
       <label>Issuer ID</label>
       <select class="long" name="issuer_id">
+        <option value="">— Select Issuer —</option>
         <% issuers.forEach(function(i){ %>
-          <option value="<%= i.institution_id %>" <%= s.issuer_id===i.institution_id?'selected':'' %>><%= i.institution_id %> (<%= i.institution_name %>)</option>
+          <option value="<%= i.institution_id %>" <%= s.issuer_id===i.institution_id?'selected':'' %>>
+            <%= i.institution_id %> — <%= i.institution_name %>
+          </option>
         <% }); %>
       </select>
       <label style="min-width:70px">Prefix Type</label>
       <select class="med" name="prefix_type">
-        <% ['On-Us','System','Not-On-Us'].forEach(function(t){ %><option <%= s.prefix_type===t?'selected':'' %>><%= t %></option><% }); %>
+        <% ['On-Us','System','Not-On-Us'].forEach(function(t){ %>
+          <option <%= s.prefix_type===t?'selected':'' %>><%= t %></option>
+        <% }); %>
       </select>
     </div>
 
+    <!-- Tab strip row 1 -->
     <div class="tabstrip">
       <a href="#" class="disabled">Card Verification</a>
       <a href="#" class="disabled">Dynamic Card Verification</a>
@@ -49,51 +62,101 @@
       <a href="#" class="disabled">EMV Auth Options</a>
       <a href="#" class="disabled">CAVV</a>
     </div>
-    <div class="tabstrip" style="margin-top:0">
-      <a href="#" class="active">Processing Information</a>
+    <!-- Tab strip row 2 -->
+    <div class="tabstrip" style="margin-top:0" id="pfxTabStrip">
+      <a href="#" class="active" onclick="showTab('processing',this);return false">Processing Information</a>
       <a href="#" class="disabled">Check Processing</a>
-      <a href="#" class="disabled">Issuer Information</a>
+      <a href="#" onclick="showTab('issuer',this);return false">Issuer Information</a>
       <a href="#" class="disabled">Card Track Information</a>
       <a href="#" class="disabled">PIN Verification</a>
     </div>
 
-    <div class="tab-pane">
+    <!-- TAB: Processing Information -->
+    <div class="tab-pane" id="tab-processing">
       <div style="display:flex; gap:16px">
         <div style="flex:1">
           <div class="form-row" style="margin-bottom:8px">
-            <label style="min-width:0"><input type="checkbox" name="member_number_on_track" <%= s.member_number_on_track?'checked':'' %>> Member Number on Track</label>
+            <label style="min-width:0"><input type="checkbox" name="member_number_on_track" <%= s.member_number_on_track?'checked':'' %>>
+              Member Number on Track</label>
           </div>
           <div class="form-row" style="margin-bottom:8px">
-            <label style="min-width:0"><input type="checkbox" name="include_holds" <%= s.include_holds?'checked':'' %>> Include Holds When Checking Limits, Usages and Balances</label>
+            <label style="min-width:0"><input type="checkbox" name="include_holds" <%= s.include_holds?'checked':'' %>>
+              Include Holds When Checking Limits, Usages and Balances</label>
           </div>
-          <div class="form-row"><label>Expiration Date Check Option</label>
+          <div class="form-row">
+            <label>Expiration Date Check Option</label>
             <select class="med" name="expiration_check_option">
-              <% ['{none}','Warning','Required'].forEach(function(o){ %><option <%= s.expiration_check_option===o?'selected':'' %>><%= o %></option><% }); %>
+              <% ['{none}','Warning','Required'].forEach(function(o){ %>
+                <option <%= s.expiration_check_option===o?'selected':'' %>><%= o %></option>
+              <% }); %>
             </select>
           </div>
-          <div class="form-row"><label>Fraud System Option</label>
+          <div class="form-row">
+            <label>Fraud System Option</label>
             <select class="med" name="fraud_option">
-              <% ['Do Not Use Fraud System','Use Fraud System'].forEach(function(o){ %><option <%= s.fraud_option===o?'selected':'' %>><%= o %></option><% }); %>
+              <% ['Do Not Use Fraud System','Use Fraud System'].forEach(function(o){ %>
+                <option <%= s.fraud_option===o?'selected':'' %>><%= o %></option>
+              <% }); %>
             </select>
           </div>
-          <div class="form-row"><label>Maximum PIN Retry Count</label>
-            <input class="short" type="text" name="max_pin_retry" value="<%= s.max_pin_retry||3 %>"></div>
+          <div class="form-row">
+            <label>Maximum PIN Retry Count</label>
+            <input class="short" type="number" name="max_pin_retry" value="<%= s.max_pin_retry||3 %>">
+          </div>
         </div>
-        <fieldset class="group" style="width:230px; align-self:flex-start"><legend>Route Type</legend>
+        <fieldset class="group" style="width:220px; align-self:flex-start"><legend>Route Type</legend>
           <div class="form-row" style="margin-bottom:6px"><label style="min-width:0">
-            <input type="radio" name="route_type" value="Acquirer and Issuer" <%= s.route_type!=='Issuer only'?'checked':'' %>> Acquirer and Issuer</label></div>
+            <input type="radio" name="route_type" value="Acquirer and Issuer"
+              <%= s.route_type!=='Issuer only'?'checked':'' %>> Acquirer and Issuer</label></div>
           <div class="form-row"><label style="min-width:0">
-            <input type="radio" name="route_type" value="Issuer only" <%= s.route_type==='Issuer only'?'checked':'' %>> Issuer only</label></div>
+            <input type="radio" name="route_type" value="Issuer only"
+              <%= s.route_type==='Issuer only'?'checked':'' %>> Issuer only</label></div>
+          <p class="hint" style="margin:6px 0 0; font-size:10px">
+            "Issuer only" uses the Destination Routing Profile from the <i>Issuer Information</i> tab
+            directly, bypassing the Acquirer/Issuer relationship.
+          </p>
         </fieldset>
       </div>
-
       <div class="actions">
-        <button class="btn primary" type="submit">Guardar</button>
-        <a class="btn" href="/prefix">Nuevo</a>
+        <button class="btn primary" type="submit">Save</button>
+        <a class="btn" href="/prefix">New</a>
+      </div>
+    </div>
+
+    <!-- TAB: Issuer Information -->
+    <div class="tab-pane" id="tab-issuer" style="display:none">
+      <p class="hint" style="margin:0 0 10px">
+        The <b>Destination Routing Profile</b> here is used by the Router (RTR) component
+        to determine where to send authorization requests for this prefix.<br>
+        — For <b>On-Us</b> prefixes: used for chargebacks or when the PAN is not present.<br>
+        — For <b>Not-On-Us</b> prefixes with <i>Route Type = Issuer only</i>: this profile is the primary routing target.
+      </p>
+      <div class="form-row">
+        <label>Destination Routing Profile</label>
+        <select class="long" name="destination_routing_profile">
+          <option value="">(none — use Source Routing Profile)</option>
+          <% (hosts||[]).forEach(function(h){ %>
+            <option value="<%= h %>" <%= s.destination_routing_profile===h?'selected':'' %>><%= h %></option>
+          <% }); %>
+        </select>
+      </div>
+      <div class="actions">
+        <button class="btn primary" type="submit">Save</button>
       </div>
     </div>
   </div>
   </form>
-  <div class="mdi-status"><span class="ico">ℹ️</span> <%= s.prefix ? '260 - Desktop bounds(0,0,1022,718) — prefix ' + s.prefix : 'Ready' %></div>
+  <div class="mdi-status"><span class="ico">ℹ️</span>
+    <%= s.prefix ? '260 - Desktop bounds — prefix ' + s.prefix + ' (' + s.prefix_type + ')' : 'Ready' %>
+  </div>
 </div>
+
+<script>
+function showTab(name, el) {
+  document.querySelectorAll('.tab-pane').forEach(function(p){ p.style.display='none'; });
+  document.getElementById('tab-'+name).style.display='';
+  document.querySelectorAll('#pfxTabStrip a').forEach(function(a){ a.classList.remove('active'); });
+  el.classList.add('active'); el.classList.remove('disabled');
+}
+</script>
 <%- include('partials/bottom') %>

@@ -118,6 +118,12 @@ a { color: inherit; text-decoration: none; }
 
 .view-content { flex: 1; overflow-y: auto; }
 
+.tree-group {
+  display: flex; align-items: center;
+  padding: 5px 8px 2px;
+  font-size: 10px; font-weight: bold; color: #888; text-transform: uppercase;
+  letter-spacing: .5px; border-top: 1px solid #E8E8E8; margin-top: 2px;
+}
 .tree-project {
   display: flex; align-items: center; gap: 5px;
   padding: 4px 8px;
@@ -362,7 +368,7 @@ table.grid tr:hover td { background: #EAF3FD; }
   white-space: pre-wrap; line-height: 1.6;
 }
 .badge { display: inline-block; padding: 2px 8px; border-radius: 2px; font-weight: bold; color: #fff; }
-.badge.ok { background: #167516; } .badge.no { background: #C01515; }
+.badge.ok { background: #167516; } .badge.no { background: #C01515; } .badge.warn { background: #A06000; color:#fff; }
 .hint { color: #777; margin: 4px 0 0; font-size: 11px; }
 .pill {
   display: inline-block; background: #EBF4FF; border: 1px solid #82BDDB;

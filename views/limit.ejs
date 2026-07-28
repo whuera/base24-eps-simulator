@@ -1,0 +1,121 @@
+<%- include('partials/top') %>
+<% const s = sel || {}; %>
+<div class="mdi-window" style="max-width:700px">
+  <div class="mdi-title"><span class="ico">⚖️</span> Limit Profile Configuration<%= s.name ? ' — ' + s.name : '' %>
+    <span class="spacer"></span>
+    <span class="mini-win">_</span><span class="mini-win">▢</span><span class="mini-win close">✕</span>
+  </div>
+  <div class="mdi-toolbar">
+    <a class="tb" href="/limit" title="New">🗋</a>
+    <span class="tb" title="Save" onclick="document.forms.lmtForm.submit()">💾</span>
+    <% if (s.id) { %>
+    <form method="post" action="/limit/delete" style="display:inline"
+          onsubmit="return confirm('Delete limit profile «'+document.querySelector('[name=name]').value+'»?')">
+      <input type="hidden" name="id" value="<%= s.id %>">
+      <button class="tb" style="border:none;background:none" title="Delete">🗑</button>
+    </form>
+    <% } %>
+  </div>
+
+  <% if (msg) { %><div class="alert alert-ok">&#10003; <%= msg %></div><% } %>
+
+  <form method="post" action="/limit" name="lmtForm">
+  <input type="hidden" name="id" value="<%= s.id||'' %>">
+  <div class="mdi-body">
+
+    <div style="display:flex; gap:8px; align-items:flex-end; margin-bottom:10px">
+      <div class="form-row req" style="flex:1; margin-bottom:0">
+        <label>Profile Name</label>
+        <input class="med" type="text" name="name" value="<%= s.name||'' %>" required>
+      </div>
+      <select class="med" onchange="location.href='/limit?id='+this.value">
+        <option value="">— open —</option>
+        <% list.forEach(function(l){ %>
+          <option value="<%= l.id %>" <%= s.id==l.id?'selected':'' %>><%= l.name %></option>
+        <% }); %>
+      </select>
+      <button class="btn primary" type="submit">Save Profile</button>
+    </div>
+
+    <div class="form-row">
+      <label>Description</label>
+      <input class="long" type="text" name="description" value="<%= s.description||'' %>">
+    </div>
+
+    <div class="tabstrip">
+      <a href="#" class="active">Limit Values</a>
+      <a href="#" class="disabled">Usages</a>
+      <a href="#" class="disabled">Rolling Periods</a>
+    </div>
+    <div class="tab-pane">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px">
+        <fieldset class="group"><legend>Transaction Limits</legend>
+          <div class="form-row">
+            <label>Currency Code</label>
+            <select class="short" name="currency_code">
+              <% ['USD','EUR','GBP','JPY','CAD','MXN','COP','PEN','CLP','BRL'].forEach(function(c){ %>
+                <option <%= (s.currency_code||'USD')===c?'selected':'' %>><%= c %></option>
+              <% }); %>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Minimum Amount</label>
+            <input class="short" type="number" step="0.01" name="min_amount" value="<%= s.min_amount||0 %>">
+          </div>
+          <div class="form-row">
+            <label>Max Amount per Transaction</label>
+            <input class="short" type="number" step="0.01" name="max_amount_per_txn" value="<%= s.max_amount_per_txn||1000000 %>">
+          </div>
+        </fieldset>
+        <fieldset class="group"><legend>Daily / Period Limits</legend>
+          <div class="form-row">
+            <label>Period Type</label>
+            <select class="med" name="period_type">
+              <% ['Rolling Daily','Rolling Weekly','Rolling Monthly','Fixed Daily'].forEach(function(p){ %>
+                <option <%= (s.period_type||'Rolling Daily')===p?'selected':'' %>><%= p %></option>
+              <% }); %>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Daily Amount Limit</label>
+            <input class="short" type="number" step="0.01" name="daily_amount_limit" value="<%= s.daily_amount_limit||1000000 %>">
+          </div>
+          <div class="form-row">
+            <label>Daily Count Limit</label>
+            <input class="short" type="number" name="daily_count_limit" value="<%= s.daily_count_limit||9999 %>">
+          </div>
+        </fieldset>
+      </div>
+
+      <div class="actions" style="margin-top:12px">
+        <button class="btn primary" type="submit">Save</button>
+        <a class="btn" href="/limit">New</a>
+      </div>
+    </div>
+  </div>
+  </form>
+
+  <% if (list.length > 0) { %>
+  <div class="mdi-body" style="border-top:1px solid #E0E0E0; padding-top:10px">
+    <table class="grid">
+      <tr><th>Name</th><th>Currency</th><th>Min</th><th>Max/Txn</th><th>Daily Amount</th><th>Daily Count</th><th>Period</th></tr>
+      <% list.forEach(function(l){ %>
+        <tr style="<%= s.id==l.id?'background:#E8F4FD':''; %>">
+          <td><a href="/limit?id=<%= l.id %>"><b><%= l.name %></b></a></td>
+          <td><%= l.currency_code||'USD' %></td>
+          <td style="text-align:right"><%= Number(l.min_amount).toFixed(2) %></td>
+          <td style="text-align:right"><%= Number(l.max_amount_per_txn).toFixed(2) %></td>
+          <td style="text-align:right"><%= Number(l.daily_amount_limit).toFixed(2) %></td>
+          <td style="text-align:right"><%= l.daily_count_limit %></td>
+          <td><%= l.period_type||'Rolling Daily' %></td>
+        </tr>
+      <% }); %>
+    </table>
+  </div>
+  <% } %>
+
+  <div class="mdi-status"><span class="ico">ℹ️</span>
+    <%= s.name ? '2 - Successful view of Limit Profile ' + s.name + '.' : 'Ready' %>
+  </div>
+</div>
+<%- include('partials/bottom') %>

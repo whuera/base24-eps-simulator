@@ -27,14 +27,14 @@
   <div class="eclipse-menubar">
     <% const links = {
          'File': '/', 'Configure': '/institution', 'System Operations': '/simulator',
-         'Customer Management': '/', 'Edit': '#', 'View': '#', 'Window': '#', 'Help': '#'
+         'Customer Management': '/cards', 'Edit': '#', 'View': '#', 'Window': '#', 'Help': '#'
        }; %>
     <% menus.forEach(function(m){ %>
       <a class="mi" href="<%= links[m] || '#' %>"><%- m.replace(/^(.)/, '<u>$1</u>') %></a>
     <% }); %>
     <span style="flex:1"></span>
     <a class="mi" href="/profile" title="Mi perfil">&#128100; Perfil</a>
-    <a class="mi" href="/logout" title="Cerrar sesi&#243;n">&#128275; Salir</a>
+    <a class="mi" href="/logout" title="Cerrar sesión">&#128275; Salir</a>
   </div>
 
   <!-- Toolbar -->
@@ -43,6 +43,9 @@
     <a class="tb" href="/host"        title="Host / Interchange">&#128423;</a>
     <a class="tb" href="/prefix"      title="Prefix">&#128290;</a>
     <a class="tb" href="/routing"     title="Routing">&#128256;</a>
+    <a class="tb" href="/limit"       title="Limit Profiles">&#9878;</a>
+    <span class="sep"></span>
+    <a class="tb" href="/cards"       title="Card Management">&#128179;</a>
     <span class="sep"></span>
     <a class="tb" href="/simulator"   title="Transaction Simulator">&#9654;</a>
     <span class="sep"></span>
@@ -71,8 +74,10 @@
       </div>
       <div class="view-content">
         <div class="tree-project">&#128193; Mobilpymes</div>
+
+        <div class="tree-group">&#128274; Configuration</div>
         <a class="tree-item<%= active === 'Institution'       ? ' active' : '' %>" href="/institution">
-          <span class="ico">&#128203;</span> Institution
+          <span class="ico">&#127974;</span> Institution
         </a>
         <a class="tree-item<%= active === 'Host/Interchange'  ? ' active' : '' %>" href="/host">
           <span class="ico">&#128423;</span> Host / Interchange
@@ -83,15 +88,22 @@
         <a class="tree-item<%= active === 'Routing'           ? ' active' : '' %>" href="/routing">
           <span class="ico">&#128256;</span> Routing
         </a>
+        <a class="tree-item<%= active === 'Limit Profiles'    ? ' active' : '' %>" href="/limit">
+          <span class="ico">&#9878;</span> Limit Profiles
+        </a>
+
+        <div class="tree-group">&#128101; Customer</div>
+        <a class="tree-item<%= active === 'Cards'             ? ' active' : '' %>" href="/cards">
+          <span class="ico">&#128179;</span> Card Management
+        </a>
+
+        <div class="tree-group">&#9654; Operations</div>
         <a class="tree-item<%= active === 'System Operations' ? ' active' : '' %>" href="/simulator">
           <span class="ico">&#9654;</span> Transaction Simulator
         </a>
 
         <% if (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'admin') { %>
-          <div style="border-top:1px solid #E0E0E0; margin:4px 0;"></div>
-          <div class="tree-project" style="font-size:10px; color:#888; font-weight:normal; padding:3px 8px;">
-            &#128272; Administration
-          </div>
+          <div class="tree-group">&#128272; Administration</div>
           <a class="tree-item<%= active === 'Users' ? ' active' : '' %>" href="/users">
             <span class="ico">&#128101;</span> User Management
           </a>
