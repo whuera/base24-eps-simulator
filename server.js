@@ -162,7 +162,7 @@ app.get('/institution', async (req, res) => {
     const list = await db.all('SELECT * FROM institutions ORDER BY institution_id');
     const sel  = req.query.id
       ? await db.get('SELECT * FROM institutions WHERE institution_id=$1', [req.query.id])
-      : list[0];
+      : null;
     const contacts = sel
       ? await db.all('SELECT * FROM contacts WHERE institution_ref=$1', [sel.id])
       : [];
