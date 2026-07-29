@@ -1,0 +1,246 @@
+<%- include('partials/top') %>
+<% const s = sel || {}; %>
+<% const activeTab = tab || 'general'; %>
+
+<div class="mdi-window">
+  <div class="mdi-title">
+    <span class="ico">&#9881;&#65039;</span> Routing Configuration - Destination
+    <%= s.name ? ' &#8212; ' + s.name : '' %>
+    <span class="spacer"></span>
+    <span class="mini-win">_</span><span class="mini-win">&#9634;</span><span class="mini-win close">&#10005;</span>
+  </div>
+  <div class="mdi-toolbar">
+    <a class="tb" href="/routing/destination-config" title="Refresh">&#8635;</a>
+    <span class="sep"></span>
+    <a class="tb" href="/routing/dest-profile" title="Manage Destination Routing Profiles">&#128203;</a>
+  </div>
+
+  <div class="mdi-body">
+    <!-- Top filter row -->
+    <div style="display:flex; gap:12px; align-items:center; margin-bottom:10px; flex-wrap:wrap;
+                border-bottom:1px solid #E4E4E4; padding-bottom:10px">
+      <div class="form-row req" style="margin-bottom:0">
+        <label>Destination Routing Profile</label>
+        <select class="med" onchange="location.href='/routing/destination-config?id='+this.value+'&tab=<%= activeTab %>'">
+          <option value="">Select/Enter</option>
+          <% drpList.forEach(function(p){ %>
+            <option value="<%= p.id %>" <%= s.id==p.id?'selected':'' %>><%= p.name %></option>
+          <% }); %>
+        </select>
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <label>Route Code</label>
+        <select class="med">
+          <option value="">Select/Enter</option>
+          <% (rows||[]).forEach(function(r){ %>
+            <option><%= r.route_code %></option>
+          <% }); %>
+        </select>
+      </div>
+    </div>
+
+    <% if (s.id) { %>
+    <!-- Route Code grid -->
+    <div style="font-size:11px; color:#555; margin-bottom:4px">
+      <b>Route Code Configuration</b> &mdash; Account types and authentication method per route code.
+    </div>
+    <table class="grid" style="font-size:11px">
+      <tr>
+        <th style="width:22px">&#8594;</th>
+        <th>Route Code</th>
+        <th>Account Type 1</th>
+        <th>Account Type 2</th>
+        <th>Cust Authentication Mthd</th>
+        <th style="width:30px"></th>
+      </tr>
+      <% (rows||[]).forEach(function(r, i){ %>
+      <tr style="<%= i%2===0?'':'background:#fafafa' %>">
+        <td style="text-align:center; color:#888; font-size:10px"><%= i===0?'&#8594;':'' %></td>
+        <td><b><%= r.route_code %></b></td>
+        <td>
+          <select style="width:100%" onchange="this.form && this.form.submit()">
+            <% ['Savings','Checking','Credit','Default'].forEach(function(t){ %>
+              <option <%= r.account_type_1===t?'selected':'' %>><%= t %></option>
+            <% }); %>
+          </select>
+        </td>
+        <td>
+          <select style="width:100%">
+            <% ['Checking','Savings','Credit','Default'].forEach(function(t){ %>
+              <option <%= r.account_type_2===t?'selected':'' %>><%= t %></option>
+            <% }); %>
+          </select>
+        </td>
+        <td>
+          <select style="width:100%">
+            <% ['PIN','Signature','None','Online PIN'].forEach(function(m){ %>
+              <option <%= r.cust_auth_method===m?'selected':'' %>><%= m %></option>
+            <% }); %>
+          </select>
+        </td>
+        <td>
+          <form method="post" action="/routing/destination-config/row/delete"
+                onsubmit="return confirm('Remove route code <%= r.route_code %>?')">
+            <input type="hidden" name="id" value="<%= r.id %>">
+            <button class="btn danger" style="padding:1px 5px; font-size:10px">&#10005;</button>
+          </form>
+        </td>
+      </tr>
+      <% }); %>
+      <!-- Add new row -->
+      <form method="post" action="/routing/destination-config/row">
+        <input type="hidden" name="profile_ref" value="<%= s.id %>">
+        <tr style="background:#f0f8ff">
+          <td style="text-align:center; color:#aaa">+</td>
+          <td><input type="text" name="route_code" style="width:88%" placeholder="e.g. RTRN" required></td>
+          <td>
+            <select name="account_type_1" style="width:100%">
+              <% ['Savings','Checking','Credit','Default'].forEach(function(t){ %>
+                <option><%= t %></option>
+              <% }); %>
+            </select>
+          </td>
+          <td>
+            <select name="account_type_2" style="width:100%">
+              <% ['Checking','Savings','Credit','Default'].forEach(function(t){ %>
+                <option><%= t %></option>
+              <% }); %>
+            </select>
+          </td>
+          <td>
+            <select name="cust_auth_method" style="width:100%">
+              <% ['PIN','Signature','None','Online PIN'].forEach(function(m){ %>
+                <option><%= m %></option>
+              <% }); %>
+            </select>
+          </td>
+          <td><button class="btn primary" style="padding:2px 6px; font-size:11px">&#65291;</button></td>
+        </tr>
+      </form>
+    </table>
+
+    <!-- Tabs -->
+    <div class="tabstrip" style="margin-top:12px">
+      <a href="/routing/destination-config?id=<%= s.id %>&tab=general"
+         class="<%= activeTab==='general'?'active':'' %>">General Information</a>
+      <a href="/routing/destination-config?id=<%= s.id %>&tab=primary"
+         class="<%= activeTab==='primary'?'active':'' %>">Primary Destination</a>
+      <a href="/routing/destination-config?id=<%= s.id %>&tab=alt1"
+         class="<%= activeTab==='alt1'?'active':'' %>">Alternate Destination 1</a>
+      <a href="/routing/destination-config?id=<%= s.id %>&tab=alt2"
+         class="<%= activeTab==='alt2'?'active':'' %>">Alternate Destination 2</a>
+    </div>
+    <div class="tab-pane">
+      <% if (activeTab === 'general') { %>
+      <form method="post" action="/routing/destination-config/general">
+        <input type="hidden" name="id" value="<%= s.id %>">
+
+        <fieldset class="group">
+          <legend>Authorization Information</legend>
+          <div class="form-row">
+            <label>Destination Route Floor Limit</label>
+            <input type="text" class="short" name="dest_route_floor_limit"
+                   value="<%= Number(s.dest_route_floor_limit||0).toFixed(2) %>">
+            <span style="font-size:11px;color:#555;margin-left:4px">USD</span>
+            <label style="min-width:auto; margin-left:24px; display:flex; align-items:center; gap:4px">
+              <input type="checkbox" name="txn_auditing_ind" value="1"
+                     <%= s.txn_auditing_ind ? 'checked' : '' %>>
+              Transaction Auditing Indicator
+            </label>
+          </div>
+          <div class="form-row">
+            <label>Alternate Floor Limit Algorithm</label>
+            <select class="med" name="alt_floor_limit_algo">
+              <option value=""></option>
+              <% ['Standard','Enhanced','None'].forEach(function(v){ %>
+                <option value="<%= v %>" <%= (s.alt_floor_limit_algo||'')===v?'selected':'' %>><%= v %></option>
+              <% }); %>
+            </select>
+            <label style="min-width:auto; margin-left:10px; display:flex; align-items:center; gap:4px">
+              <input type="checkbox" name="alt_floor_limit_check" value="1"
+                     <%= s.alt_floor_limit_check ? 'checked' : '' %>>
+              Alternate Floor Limit Check Indicator
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="group">
+          <legend>Default Authorization Information</legend>
+          <div class="form-row">
+            <label>Floor Limit</label>
+            <input type="text" class="short" name="floor_limit"
+                   value="<%= Number(s.floor_limit||0).toFixed(2) %>">
+            <span style="font-size:11px;color:#555;margin-left:4px">USD</span>
+          </div>
+          <div class="form-row">
+            <label>Over Limit Action</label>
+            <select class="med" name="over_limit_action">
+              <% ['Decline','Approve','Referral'].forEach(function(a){ %>
+                <option <%= (s.over_limit_action||'Decline')===a?'selected':'' %>><%= a %></option>
+              <% }); %>
+            </select>
+            <label style="min-width:auto; margin-left:10px">Under Limit Action</label>
+            <select class="med" name="under_limit_action">
+              <% ['Decline','Approve','Referral'].forEach(function(a){ %>
+                <option <%= (s.under_limit_action||'Decline')===a?'selected':'' %>><%= a %></option>
+              <% }); %>
+            </select>
+          </div>
+        </fieldset>
+
+        <div class="actions">
+          <button class="btn primary" type="submit">Save General Info</button>
+        </div>
+      </form>
+
+      <% } else if (activeTab === 'primary') { %>
+      <div style="padding:10px 0">
+        <div class="hint">
+          <b>Primary Destination</b> &mdash; Define the primary host/interface target for transactions
+          routed through this Destination Routing Profile.
+        </div>
+        <div style="margin-top:10px; color:#aaa; font-size:11px; font-style:italic">
+          Primary Destination configuration is managed through the Host/Interchange module.
+          The <b>Destination Routing Profile</b> name is referenced in the Host's Source Routing Profile.
+        </div>
+      </div>
+
+      <% } else if (activeTab === 'alt1') { %>
+      <div style="padding:10px 0">
+        <div class="hint">
+          <b>Alternate Destination 1</b> &mdash; Fallback routing target if the primary destination
+          is unavailable or returns a timeout.
+        </div>
+        <div style="margin-top:10px; color:#aaa; font-size:11px; font-style:italic">
+          Alternate destination configuration reserved for future releases.
+        </div>
+      </div>
+
+      <% } else if (activeTab === 'alt2') { %>
+      <div style="padding:10px 0">
+        <div class="hint">
+          <b>Alternate Destination 2</b> &mdash; Secondary fallback routing target.
+        </div>
+        <div style="margin-top:10px; color:#aaa; font-size:11px; font-style:italic">
+          Alternate destination configuration reserved for future releases.
+        </div>
+      </div>
+      <% } %>
+    </div>
+
+    <% } else { %>
+    <div class="hint" style="margin-top:12px">
+      Select a Destination Routing Profile from the dropdown above to view its Route Code configuration.
+    </div>
+    <% } %>
+  </div>
+
+  <div class="mdi-status">
+    <span class="ico">&#8505;&#65039;</span>
+    <%= s.name
+      ? '2 - Successful view of Routing Configuration - Destination ' + s.name + '.'
+      : 'Select a Destination Routing Profile to configure.' %>
+  </div>
+</div>
+
+<%- include('partials/bottom') %>

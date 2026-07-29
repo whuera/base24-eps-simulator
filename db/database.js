@@ -173,6 +173,43 @@ async function initSchema() {
   ).catch(() => {});
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS destination_routing_profiles (
+      id                     SERIAL PRIMARY KEY,
+      name                   TEXT UNIQUE NOT NULL,
+      description            TEXT,
+      dest_route_floor_limit NUMERIC DEFAULT 0.00,
+      currency_code          TEXT DEFAULT 'USD',
+      txn_auditing_ind       BOOLEAN DEFAULT false,
+      alt_floor_limit_algo   TEXT DEFAULT '',
+      alt_floor_limit_check  BOOLEAN DEFAULT false,
+      floor_limit            NUMERIC DEFAULT 0.00,
+      over_limit_action      TEXT DEFAULT 'Decline',
+      under_limit_action     TEXT DEFAULT 'Decline',
+      created_at             TIMESTAMP DEFAULT NOW()
+    )`);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS routing_config_dest (
+      id               SERIAL PRIMARY KEY,
+      profile_ref      INTEGER NOT NULL REFERENCES destination_routing_profiles(id) ON DELETE CASCADE,
+      route_code       TEXT NOT NULL,
+      account_type_1   TEXT DEFAULT 'Savings',
+      account_type_2   TEXT DEFAULT 'Checking',
+      cust_auth_method TEXT DEFAULT 'PIN',
+      created_at       TIMESTAMP DEFAULT NOW()
+    )`);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS dest_src_relationships (
+      id                   SERIAL PRIMARY KEY,
+      dest_routing_profile TEXT NOT NULL,
+      src_routing_profile  TEXT NOT NULL,
+      txn_code             TEXT DEFAULT '**',
+      route_code           TEXT DEFAULT '',
+      created_at           TIMESTAMP DEFAULT NOW()
+    )`);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS cards (
       id              SERIAL PRIMARY KEY,
       pan             TEXT UNIQUE NOT NULL,
@@ -228,6 +265,54 @@ async function initSchema() {
   ).catch(() => {});
 }
 
+// ─── DRP Seed ────────────────────────────────────────────────────────────────
+async function seedDRPData() {
+  const n = await db.get('SELECT COUNT(*) AS n FROM destination_routing_profiles');
+  if (Number(n.n) > 0) return;
+
+  const drp1 = await db.run(`
+    INSERT INTO destination_routing_profiles (name, description, dest_route_floor_limit, floor_limit, over_limit_action, under_limit_action)
+    VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
+    ['HISO93_DEST_01','HISO93 Primary Destination Profile', 0.00, 0.00, 'Decline', 'Decline']);
+
+  const drp2 = await db.run(`
+    INSERT INTO destination_routing_profiles (name, description, dest_route_floor_limit, floor_limit, over_limit_action, under_limit_action)
+    VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
+    ['VISA_DEST_01','VISA Base-1 Destination Profile', 0.00, 0.00, 'Decline', 'Decline']);
+
+  for (const [rc, at1, at2, cam] of [
+    ['RTRN','Savings','Checking','PIN'],
+    ['PUR', 'Savings','Checking','PIN'],
+    ['WDL', 'Savings','Checking','PIN'],
+    ['INQ', 'Savings','Checking','PIN'],
+    ['XFER','Savings','Checking','PIN'],
+  ]) {
+    await db.run(`INSERT INTO routing_config_dest (profile_ref,route_code,account_type_1,account_type_2,cust_auth_method)
+      VALUES ($1,$2,$3,$4,$5)`, [drp1.id, rc, at1, at2, cam]);
+  }
+  for (const [rc, at1, at2, cam] of [
+    ['PUR','Savings','Credit','PIN'],
+    ['WDL','Savings','Checking','PIN'],
+  ]) {
+    await db.run(`INSERT INTO routing_config_dest (profile_ref,route_code,account_type_1,account_type_2,cust_auth_method)
+      VALUES ($1,$2,$3,$4,$5)`, [drp2.id, rc, at1, at2, cam]);
+  }
+
+  for (const [drp, srp, txn, rc] of [
+    ['HISO93_DEST_01','ATMDH_ACQRTE',               '**',                            'RTRN'],
+    ['HISO93_DEST_01','VISA_SRC',                    '00 (Purchase)',                 'PUR' ],
+    ['HISO93_DEST_01','VISA_SRC',                    '01 (Withdrawal/Cash Advance)',  'WDL' ],
+    ['HISO93_DEST_01','VISA_SRC',                    '09 (Purchase with Cash back)',  'PUR' ],
+    ['HISO93_DEST_01','VISA_SRC',                    '20 (Return)',                   'RTRN'],
+    ['HISO93_DEST_01','VISA_SRC',                    '30 (Available Funds Inquiry)',  'INQ' ],
+    ['HISO93_DEST_01','VISA_SRC',                    '40 (Transfer)',                 'XFER'],
+    ['VISA_DEST_01',  'STAR_SRC',                    '**',                            'PUR' ],
+  ]) {
+    await db.run(`INSERT INTO dest_src_relationships (dest_routing_profile,src_routing_profile,txn_code,route_code)
+      VALUES ($1,$2,$3,$4)`, [drp, srp, txn, rc]);
+  }
+}
+
 // ─── Seed ────────────────────────────────────────────────────────────────────
 async function seedIfEmpty() {
   // Admin user
@@ -239,6 +324,9 @@ async function seedIfEmpty() {
       ['admin', 'admin@mobilpymes.local', hash, 'admin']);
     console.log('Usuario admin creado: admin / Admin123!');
   }
+
+  // Always seed DRP demo data if table is empty (handles upgrades too)
+  await seedDRPData();
 
   const count = await db.get('SELECT COUNT(*) AS n FROM institutions');
   if (Number(count.n) > 0) return;

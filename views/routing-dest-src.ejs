@@ -1,0 +1,151 @@
+<%- include('partials/top') %>
+
+<div class="mdi-window">
+  <div class="mdi-title">
+    <span class="ico">&#128279;</span> Routing Configuration - Destination/Source Relationship
+    <%= selDrp ? ' &#8212; ' + selDrp + ' - ...' : '' %>
+    <span class="spacer"></span>
+    <span class="mini-win">_</span><span class="mini-win">&#9634;</span><span class="mini-win close">&#10005;</span>
+  </div>
+  <div class="mdi-toolbar">
+    <a class="tb" href="/routing/dest-src" title="Refresh">&#8635;</a>
+    <span class="sep"></span>
+    <a class="tb" href="/routing/dest-profile" title="Manage Destination Routing Profiles">&#128203;</a>
+    <a class="tb" href="/routing" title="Manage Source Routing Profiles">&#128256;</a>
+  </div>
+
+  <div class="mdi-body">
+    <!-- Filter / selector row -->
+    <div style="display:flex; gap:12px; align-items:center; margin-bottom:10px; flex-wrap:wrap;
+                border-bottom:1px solid #E4E4E4; padding-bottom:10px">
+      <div class="form-row req" style="margin-bottom:0">
+        <label>Destination Routing Profile</label>
+        <select class="med"
+          onchange="location.href='/routing/dest-src?drp='+encodeURIComponent(this.value)+'&srp=<%= encodeURIComponent(selSrp) %>'">
+          <option value="">Select</option>
+          <% drpList.forEach(function(p){ %>
+            <option value="<%= p.name %>" <%= selDrp===p.name?'selected':'' %>><%= p.name %></option>
+          <% }); %>
+        </select>
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <label>Source Routing Profile</label>
+        <select class="med"
+          onchange="location.href='/routing/dest-src?drp=<%= encodeURIComponent(selDrp) %>&srp='+encodeURIComponent(this.value)">
+          <option value="ANY" <%= selSrp==='ANY'?'selected':'' %>>ANY</option>
+          <% srpList.forEach(function(p){ %>
+            <option value="<%= p.name %>" <%= selSrp===p.name?'selected':'' %>><%= p.name %></option>
+          <% }); %>
+        </select>
+      </div>
+    </div>
+
+    <!-- Relationship grid -->
+    <table class="grid" style="font-size:11px">
+      <tr>
+        <th style="width:22px">&#8594;</th>
+        <th>Destination Routing Pro...</th>
+        <th>Source Routing Profile</th>
+        <th>Transaction Code</th>
+        <th>Route Code</th>
+        <th style="width:30px"></th>
+      </tr>
+      <% (rows||[]).forEach(function(r, i){ %>
+      <tr style="<%= i%2===0?'':'background:#fafafa' %>">
+        <td style="text-align:center; color:#888; font-size:10px"><%= i===0?'&#8594;':'' %></td>
+        <td><b><%= r.dest_routing_profile %></b></td>
+        <td><%= r.src_routing_profile %></td>
+        <td><%= r.txn_code %></td>
+        <td>
+          <select style="width:90%">
+            <% ['RTRN','PUR','WDL','INQ','XFER','BAL','REV'].forEach(function(c){ %>
+              <option <%= r.route_code===c?'selected':'' %>><%= c %></option>
+            <% }); %>
+            <% if (!['RTRN','PUR','WDL','INQ','XFER','BAL','REV'].includes(r.route_code) && r.route_code) { %>
+              <option selected><%= r.route_code %></option>
+            <% } %>
+          </select>
+        </td>
+        <td>
+          <form method="post" action="/routing/dest-src/delete"
+                onsubmit="return confirm('Remove this relationship?')">
+            <input type="hidden" name="id" value="<%= r.id %>">
+            <button class="btn danger" style="padding:1px 5px; font-size:10px">&#10005;</button>
+          </form>
+        </td>
+      </tr>
+      <% }); %>
+
+      <!-- Add new row -->
+      <% if (selDrp) { %>
+      <form method="post" action="/routing/dest-src">
+        <tr style="background:#f0f8ff">
+          <td style="text-align:center; color:#aaa">+</td>
+          <td>
+            <select name="dest_routing_profile" style="width:100%">
+              <% drpList.forEach(function(p){ %>
+                <option value="<%= p.name %>" <%= selDrp===p.name?'selected':'' %>><%= p.name %></option>
+              <% }); %>
+            </select>
+          </td>
+          <td>
+            <select name="src_routing_profile" style="width:100%">
+              <option value="ANY" <%= selSrp==='ANY'?'selected':'' %>>ANY</option>
+              <% srpList.forEach(function(p){ %>
+                <option value="<%= p.name %>" <%= selSrp===p.name?'selected':'' %>><%= p.name %></option>
+              <% }); %>
+            </select>
+          </td>
+          <td>
+            <select name="txn_code" style="width:100%">
+              <% ['**','00 (Purchase)','01 (Withdrawal/Cash Advance)','09 (Purchase with Cash back)',
+                  '20 (Return)','30 (Available Funds Inquiry)','40 (Transfer)'].forEach(function(t){ %>
+                <option><%= t %></option>
+              <% }); %>
+            </select>
+          </td>
+          <td>
+            <select name="route_code" style="width:100%">
+              <% ['RTRN','PUR','WDL','INQ','XFER','BAL','REV'].forEach(function(c){ %>
+                <option><%= c %></option>
+              <% }); %>
+            </select>
+          </td>
+          <td>
+            <button class="btn primary" style="padding:2px 6px; font-size:11px">&#65291;</button>
+          </td>
+        </tr>
+      </form>
+      <% } %>
+    </table>
+
+    <% if (!selDrp) { %>
+    <div class="hint" style="margin-top:12px">
+      Select a <b>Destination Routing Profile</b> above to view and configure its
+      Source Routing Profile relationships. Use <b>ANY</b> in the Source Routing Profile
+      field to show all relationships for the selected destination.
+    </div>
+    <% } %>
+
+    <% if (selDrp && rows.length === 0) { %>
+    <div class="hint" style="margin-top:8px">
+      No relationships found for <b><%= selDrp %></b>
+      <% if (selSrp !== 'ANY') { %> / <b><%= selSrp %></b><% } %>.
+      Use the row above to add a new relationship.
+    </div>
+    <% } %>
+  </div>
+
+  <div class="mdi-status">
+    <span class="ico">&#8505;&#65039;</span>
+    <% if (selDrp) { %>
+      2 - Destination/Source Relationship for <b><%= selDrp %></b>
+      <% if (selSrp !== 'ANY') { %> / <b><%= selSrp %></b><% } %>
+      &mdash; <%= rows.length %> record(s).
+    <% } else { %>
+      Ready &mdash; Select a Destination Routing Profile.
+    <% } %>
+  </div>
+</div>
+
+<%- include('partials/bottom') %>

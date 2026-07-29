@@ -358,6 +358,155 @@ app.post('/routing/delete', async (req, res) => {
   } catch (err) { res.status(500).send(err.message); }
 });
 
+// ─── Destination Routing Profile ─────────────────────────────────────────────
+app.get('/routing/dest-profile', async (req, res) => {
+  try {
+    const list = await db.all('SELECT * FROM destination_routing_profiles ORDER BY name');
+    const sel  = req.query.id
+      ? await db.get('SELECT * FROM destination_routing_profiles WHERE id=$1', [req.query.id])
+      : list[0];
+    render(res, 'routing-dest-profile', { active: 'Destination Routing Profile',
+      title: 'Destination Routing Profile Configuration', list, sel });
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+app.post('/routing/dest-profile', async (req, res) => {
+  try {
+    const b = req.body;
+    let profileId = b.id;
+    if (profileId) {
+      await db.run('UPDATE destination_routing_profiles SET name=$1, description=$2 WHERE id=$3',
+        [b.name, b.description || '', profileId]);
+    } else {
+      const row = await db.run(
+        'INSERT INTO destination_routing_profiles (name,description) VALUES ($1,$2) RETURNING id',
+        [b.name, b.description || '']);
+      profileId = row.id;
+    }
+    res.redirect('/routing/dest-profile?id=' + profileId);
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+app.post('/routing/dest-profile/general', async (req, res) => {
+  try {
+    const b = req.body;
+    await db.run(`UPDATE destination_routing_profiles SET
+      dest_route_floor_limit=$1, txn_auditing_ind=$2, alt_floor_limit_algo=$3,
+      alt_floor_limit_check=$4, floor_limit=$5, over_limit_action=$6, under_limit_action=$7
+      WHERE id=$8`,
+      [Number(b.dest_route_floor_limit || 0), b.txn_auditing_ind === '1',
+       b.alt_floor_limit_algo || '', b.alt_floor_limit_check === '1',
+       Number(b.floor_limit || 0), b.over_limit_action || 'Decline',
+       b.under_limit_action || 'Decline', b.id]);
+    res.redirect('/routing/dest-profile?id=' + b.id);
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+app.post('/routing/dest-profile/delete', async (req, res) => {
+  try {
+    await db.run('DELETE FROM destination_routing_profiles WHERE id=$1', [req.body.id]);
+    res.redirect('/routing/dest-profile');
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+// ─── Routing Configuration - Destination ─────────────────────────────────────
+app.get('/routing/destination-config', async (req, res) => {
+  try {
+    const drpList = await db.all('SELECT * FROM destination_routing_profiles ORDER BY name');
+    const sel     = req.query.id
+      ? await db.get('SELECT * FROM destination_routing_profiles WHERE id=$1', [req.query.id])
+      : drpList[0];
+    const rows    = sel
+      ? await db.all('SELECT * FROM routing_config_dest WHERE profile_ref=$1 ORDER BY id', [sel.id])
+      : [];
+    render(res, 'routing-destination-config', { active: 'Routing Config Destination',
+      title: 'Routing Configuration - Destination', drpList, sel, rows,
+      tab: req.query.tab || 'general' });
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+app.post('/routing/destination-config/row', async (req, res) => {
+  try {
+    const b = req.body;
+    await db.run(`INSERT INTO routing_config_dest
+      (profile_ref,route_code,account_type_1,account_type_2,cust_auth_method)
+      VALUES ($1,$2,$3,$4,$5)`,
+      [b.profile_ref, b.route_code, b.account_type_1 || 'Savings',
+       b.account_type_2 || 'Checking', b.cust_auth_method || 'PIN']);
+    res.redirect('/routing/destination-config?id=' + b.profile_ref);
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+app.post('/routing/destination-config/row/delete', async (req, res) => {
+  try {
+    const r = await db.get('SELECT profile_ref FROM routing_config_dest WHERE id=$1', [req.body.id]);
+    await db.run('DELETE FROM routing_config_dest WHERE id=$1', [req.body.id]);
+    res.redirect('/routing/destination-config?id=' + (r ? r.profile_ref : ''));
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+app.post('/routing/destination-config/general', async (req, res) => {
+  try {
+    const b = req.body;
+    await db.run(`UPDATE destination_routing_profiles SET
+      dest_route_floor_limit=$1, txn_auditing_ind=$2, alt_floor_limit_algo=$3,
+      alt_floor_limit_check=$4, floor_limit=$5, over_limit_action=$6, under_limit_action=$7
+      WHERE id=$8`,
+      [Number(b.dest_route_floor_limit || 0), b.txn_auditing_ind === '1',
+       b.alt_floor_limit_algo || '', b.alt_floor_limit_check === '1',
+       Number(b.floor_limit || 0), b.over_limit_action || 'Decline',
+       b.under_limit_action || 'Decline', b.id]);
+    res.redirect('/routing/destination-config?id=' + b.id + '&tab=general');
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+// ─── Destination/Source Relationship ─────────────────────────────────────────
+app.get('/routing/dest-src', async (req, res) => {
+  try {
+    const drpList = await db.all('SELECT * FROM destination_routing_profiles ORDER BY name');
+    const srpList = await db.all('SELECT * FROM routing_profiles ORDER BY name');
+    const selDrp  = req.query.drp || (drpList[0] ? drpList[0].name : '');
+    const selSrp  = req.query.srp || 'ANY';
+    let rows = [];
+    if (selDrp) {
+      rows = selSrp !== 'ANY'
+        ? await db.all(
+            'SELECT * FROM dest_src_relationships WHERE dest_routing_profile=$1 AND src_routing_profile=$2 ORDER BY id',
+            [selDrp, selSrp])
+        : await db.all(
+            'SELECT * FROM dest_src_relationships WHERE dest_routing_profile=$1 ORDER BY id',
+            [selDrp]);
+    }
+    render(res, 'routing-dest-src', { active: 'Dest/Src Relationship',
+      title: 'Routing Configuration - Destination/Source Relationship',
+      drpList, srpList, selDrp, selSrp, rows });
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+app.post('/routing/dest-src', async (req, res) => {
+  try {
+    const b = req.body;
+    await db.run(`INSERT INTO dest_src_relationships
+      (dest_routing_profile,src_routing_profile,txn_code,route_code)
+      VALUES ($1,$2,$3,$4)`,
+      [b.dest_routing_profile, b.src_routing_profile, b.txn_code || '**', b.route_code || '']);
+    res.redirect('/routing/dest-src?drp=' + encodeURIComponent(b.dest_routing_profile)
+      + '&srp=' + encodeURIComponent(b.src_routing_profile));
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+app.post('/routing/dest-src/delete', async (req, res) => {
+  try {
+    const r = await db.get(
+      'SELECT dest_routing_profile,src_routing_profile FROM dest_src_relationships WHERE id=$1',
+      [req.body.id]);
+    await db.run('DELETE FROM dest_src_relationships WHERE id=$1', [req.body.id]);
+    res.redirect('/routing/dest-src'
+      + (r ? '?drp=' + encodeURIComponent(r.dest_routing_profile)
+           + '&srp=' + encodeURIComponent(r.src_routing_profile) : ''));
+  } catch (err) { res.status(500).send(err.message); }
+});
+
 // ─── Limit Profiles ───────────────────────────────────────────────────────────
 app.get('/limit', async (req, res) => {
   try {

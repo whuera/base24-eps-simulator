@@ -1,0 +1,130 @@
+<%- include('partials/top') %>
+<% const s = sel || {}; %>
+
+<div class="mdi-window" style="max-width:640px">
+  <div class="mdi-title">
+    <span class="ico">&#128203;</span> Destination Routing Profile Configurat...
+    <%= s.name ? ' &#8212; ' + s.name : '' %>
+    <span class="spacer"></span>
+    <span class="mini-win">_</span><span class="mini-win">&#9634;</span><span class="mini-win close">&#10005;</span>
+  </div>
+  <div class="mdi-toolbar">
+    <a class="tb" href="/routing/dest-profile" title="New Profile">&#128203;</a>
+    <span class="tb" title="Save Profile" onclick="document.forms.drpForm.submit()">&#128190;</span>
+    <span class="tb" title="Refresh" onclick="location.reload()">&#8635;</span>
+    <% if (s.id) { %>
+    <form method="post" action="/routing/dest-profile/delete" style="display:inline"
+          onsubmit="return confirm('Delete Destination Routing Profile &laquo;<%= s.name %>&raquo; and all its configuration?')">
+      <input type="hidden" name="id" value="<%= s.id %>">
+      <button class="tb" style="border:none;background:none" title="Delete Profile">&#128465;</button>
+    </form>
+    <% } %>
+  </div>
+
+  <div class="mdi-body">
+    <form method="post" action="/routing/dest-profile" name="drpForm">
+      <input type="hidden" name="id" value="<%= s.id||'' %>">
+
+      <div style="display:flex; gap:8px; align-items:flex-end; margin-bottom:8px">
+        <div class="form-row req" style="flex:1; margin-bottom:0">
+          <label>Destination Routing Profile</label>
+          <input class="med" type="text" name="name" value="<%= s.name||'' %>"
+                 required placeholder="Enter profile name">
+        </div>
+        <select class="med" onchange="location.href='/routing/dest-profile?id='+this.value">
+          <option value="">&#8212; Select &#8212;</option>
+          <% list.forEach(function(p){ %>
+            <option value="<%= p.id %>" <%= s.id==p.id?'selected':'' %>><%= p.name %></option>
+          <% }); %>
+        </select>
+      </div>
+
+      <div class="form-row" style="margin-bottom:10px">
+        <label>Profile Description</label>
+        <input class="long" type="text" name="description" value="<%= s.description||'' %>"
+               placeholder="Enter profile description">
+        <button class="btn primary" type="submit" style="margin-left:6px">Save</button>
+      </div>
+    </form>
+
+    <% if (s.id) { %>
+    <div class="tabstrip">
+      <a class="active">General Information</a>
+      <a class="disabled">Primary Destination</a>
+      <a class="disabled">Alternate Destination 1</a>
+      <a class="disabled">Alternate Destination 2</a>
+    </div>
+    <div class="tab-pane">
+      <form method="post" action="/routing/dest-profile/general">
+        <input type="hidden" name="id" value="<%= s.id %>">
+
+        <fieldset class="group">
+          <legend>Authorization Information</legend>
+          <div class="form-row">
+            <label>Destination Route Floor Limit</label>
+            <input type="text" class="short" name="dest_route_floor_limit"
+                   value="<%= Number(s.dest_route_floor_limit||0).toFixed(2) %>">
+            <span style="font-size:11px;color:#555;margin-left:4px">USD</span>
+            <label style="min-width:auto; margin-left:24px; display:flex; align-items:center; gap:4px">
+              <input type="checkbox" name="txn_auditing_ind" value="1"
+                     <%= s.txn_auditing_ind ? 'checked' : '' %>>
+              Transaction Auditing Indicator
+            </label>
+          </div>
+          <div class="form-row">
+            <label>Alternate Floor Limit Algorithm</label>
+            <select class="med" name="alt_floor_limit_algo">
+              <option value=""></option>
+              <% ['Standard','Enhanced','None'].forEach(function(v){ %>
+                <option value="<%= v %>" <%= (s.alt_floor_limit_algo||'')===v?'selected':'' %>><%= v %></option>
+              <% }); %>
+            </select>
+            <label style="min-width:auto; margin-left:10px; display:flex; align-items:center; gap:4px">
+              <input type="checkbox" name="alt_floor_limit_check" value="1"
+                     <%= s.alt_floor_limit_check ? 'checked' : '' %>>
+              Alternate Floor Limit Check Indicator
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="group">
+          <legend>Default Authorization Information</legend>
+          <div class="form-row">
+            <label>Floor Limit</label>
+            <input type="text" class="short" name="floor_limit"
+                   value="<%= Number(s.floor_limit||0).toFixed(2) %>">
+            <span style="font-size:11px;color:#555;margin-left:4px">USD</span>
+          </div>
+          <div class="form-row">
+            <label>Over Limit Action</label>
+            <select class="med" name="over_limit_action">
+              <% ['Decline','Approve','Referral'].forEach(function(a){ %>
+                <option <%= (s.over_limit_action||'Decline')===a?'selected':'' %>><%= a %></option>
+              <% }); %>
+            </select>
+            <label style="min-width:auto; margin-left:10px">Under Limit Action</label>
+            <select class="med" name="under_limit_action">
+              <% ['Decline','Approve','Referral'].forEach(function(a){ %>
+                <option <%= (s.under_limit_action||'Decline')===a?'selected':'' %>><%= a %></option>
+              <% }); %>
+            </select>
+          </div>
+        </fieldset>
+
+        <div class="actions">
+          <button class="btn primary" type="submit">Save General Info</button>
+        </div>
+      </form>
+    </div>
+    <% } %>
+  </div>
+
+  <div class="mdi-status">
+    <span class="ico">&#8505;&#65039;</span>
+    <%= s.name
+      ? '2 - Successful view of Destination Routing Profile ' + s.name + '.'
+      : 'Ready &#8212; Select or enter a profile name.' %>
+  </div>
+</div>
+
+<%- include('partials/bottom') %>

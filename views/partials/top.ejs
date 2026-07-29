@@ -86,8 +86,22 @@
         <a class="tree-item<%= active === 'Prefix'            ? ' active' : '' %>" href="/prefix">
           <span class="ico">&#128290;</span> Prefix
         </a>
-        <a class="tree-item<%= active === 'Routing'           ? ' active' : '' %>" href="/routing">
-          <span class="ico">&#128256;</span> Routing
+        <div class="tree-group">&#128256; Routing</div>
+        <a class="tree-item<%= active === 'Routing' ? ' active' : '' %>"
+           href="/routing" style="padding-left:28px; font-size:10.5px">
+          <span class="ico">&#128256;</span> Source Routing Profile
+        </a>
+        <a class="tree-item<%= active === 'Destination Routing Profile' ? ' active' : '' %>"
+           href="/routing/dest-profile" style="padding-left:28px; font-size:10.5px">
+          <span class="ico">&#128203;</span> Destination Routing Profile
+        </a>
+        <a class="tree-item<%= active === 'Routing Config Destination' ? ' active' : '' %>"
+           href="/routing/destination-config" style="padding-left:28px; font-size:10.5px">
+          <span class="ico">&#9881;&#65039;</span> Routing Config - Destination
+        </a>
+        <a class="tree-item<%= active === 'Dest/Src Relationship' ? ' active' : '' %>"
+           href="/routing/dest-src" style="padding-left:28px; font-size:10.5px">
+          <span class="ico">&#128279;</span> Dest/Source Relationship
         </a>
         <a class="tree-item<%= active === 'Limit Profiles'    ? ' active' : '' %>" href="/limit">
           <span class="ico">&#9878;</span> Limit Profiles
