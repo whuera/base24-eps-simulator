@@ -65,6 +65,39 @@ function requireAdmin(req, res, next) {
 
 app.use(dbReady);
 
+// ─── Guide Progress — inject configuration state into every view ──────────────
+app.use(async (_req, res, next) => {
+  try {
+    const [inst, host, pfx, rp, dp, dc, dsr, lp, card, jrnl] = await Promise.all([
+      db.get('SELECT COUNT(*) AS n FROM institutions'),
+      db.get('SELECT COUNT(*) AS n FROM hosts'),
+      db.get('SELECT COUNT(*) AS n FROM prefixes'),
+      db.get('SELECT COUNT(*) AS n FROM routing_profiles'),
+      db.get('SELECT COUNT(*) AS n FROM destination_routing_profiles'),
+      db.get('SELECT COUNT(*) AS n FROM routing_config_dest'),
+      db.get('SELECT COUNT(*) AS n FROM dest_src_relationships'),
+      db.get('SELECT COUNT(*) AS n FROM limit_profiles'),
+      db.get('SELECT COUNT(*) AS n FROM cards'),
+      db.get('SELECT COUNT(*) AS n FROM journal'),
+    ]);
+    res.locals.guideDeps = {
+      hasInstitution:    Number(inst?.n    || 0) > 0,
+      hasHost:           Number(host?.n    || 0) > 0,
+      hasPrefix:         Number(pfx?.n     || 0) > 0,
+      hasRoutingProfile: Number(rp?.n      || 0) > 0,
+      hasDestProfile:    Number(dp?.n      || 0) > 0,
+      hasDestConfig:     Number(dc?.n      || 0) > 0,
+      hasDestSrcRel:     Number(dsr?.n     || 0) > 0,
+      hasLimitProfile:   Number(lp?.n      || 0) > 0,
+      hasCard:           Number(card?.n    || 0) > 0,
+      hasJournal:        Number(jrnl?.n    || 0) > 0,
+    };
+  } catch (_) {
+    res.locals.guideDeps = {};
+  }
+  next();
+});
+
 // ─── Login / Logout ───────────────────────────────────────────────────────────
 app.get('/login', (req, res) => {
   if (req.session.user) return res.redirect('/');
