@@ -8,42 +8,68 @@
   </div>
 
   <div class="mdi-body" style="display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;">
+    <%
+      const isEn = (typeof lang !== 'undefined' && lang === 'en');
+      const __ = (es, en) => isEn ? en : es;
+    %>
 
     <!-- User info card -->
     <div style="min-width:240px; flex:1;">
       <fieldset class="group">
-        <legend>&#128100; Informaci&#243;n de cuenta</legend>
-        <div class="form-row"><label>Usuario</label><strong><%= user.username %></strong></div>
+        <legend>&#128100; <%= __('Información de cuenta', 'Account Information') %></legend>
+        <div class="form-row"><label><%= __('Usuario', 'Username') %></label><strong><%= user.username %></strong></div>
         <div class="form-row"><label>Email</label><%= user.email %></div>
         <div class="form-row">
-          <label>Rol</label>
+          <label><%= __('Rol', 'Role') %></label>
           <span class="badge" style="font-size:11px; background:<%= user.role==='admin'?'#0451A5':'#6c757d' %>">
             <%= user.role %>
           </span>
         </div>
         <div class="form-row">
-          <label>Estado</label>
+          <label><%= __('Estado', 'Status') %></label>
           <span class="badge <%= user.active ? 'ok' : 'no' %>" style="font-size:11px">
-            <%= user.active ? 'Activo' : 'Revocado' %>
+            <%= user.active ? __('Activo','Active') : __('Revocado','Revoked') %>
           </span>
         </div>
         <div class="form-row">
-          <label>&#218;ltimo login</label>
+          <label><%= __('Último login', 'Last login') %></label>
           <span style="color:#666">
-            <%= user.last_login ? new Date(user.last_login).toLocaleString('es-EC') : '(primera sesi&#243;n)' %>
+            <%= user.last_login ? new Date(user.last_login).toLocaleString(isEn?'en-US':'es-EC') : __('(primera sesión)','(first session)') %>
           </span>
         </div>
         <div class="form-row">
-          <label>Miembro desde</label>
-          <span style="color:#666"><%= new Date(user.created_at).toLocaleDateString('es-EC') %></span>
+          <label><%= __('Miembro desde', 'Member since') %></label>
+          <span style="color:#666"><%= new Date(user.created_at).toLocaleDateString(isEn?'en-US':'es-EC') %></span>
         </div>
+      </fieldset>
+
+      <!-- Language preference -->
+      <fieldset class="group" style="margin-top:10px;">
+        <legend>&#127760; <%= __('Idioma de la interfaz', 'Interface Language') %></legend>
+        <form method="post" action="/profile/lang">
+          <div class="form-row" style="align-items:center; gap:8px;">
+            <label style="min-width:0"><%= __('Selecciona idioma', 'Select language') %></label>
+            <select name="lang" class="med" onchange="this.form.submit()" style="width:160px">
+              <option value="es" <%= !isEn ? 'selected' : '' %>>&#127466;&#127480; Español</option>
+              <option value="en" <%=  isEn ? 'selected' : '' %>>&#127468;&#127463; English</option>
+            </select>
+          </div>
+          <noscript>
+            <div class="actions" style="margin-top:6px;">
+              <button class="btn" type="submit"><%= __('Aplicar', 'Apply') %></button>
+            </div>
+          </noscript>
+        </form>
+        <p style="margin-top:6px; font-size:10px; color:#888;">
+          <%= __('El cambio se aplica inmediatamente en toda la interfaz.', 'The change is applied immediately across the entire interface.') %>
+        </p>
       </fieldset>
     </div>
 
     <!-- Change password -->
     <div style="min-width:280px; flex:1;">
       <fieldset class="group">
-        <legend>&#128274; Cambiar contrase&#241;a</legend>
+        <legend>&#128274; <%= __('Cambiar contraseña', 'Change Password') %></legend>
 
         <% if (msg) { %>
           <div class="alert alert-ok" style="margin-bottom:10px;">&#10003; <%= msg %></div>
@@ -54,22 +80,22 @@
 
         <form method="post" action="/profile/password">
           <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:3px;">
-            <label>Contrase&#241;a actual</label>
+            <label><%= __('Contraseña actual', 'Current password') %></label>
             <input type="password" name="current_password" required
-                   placeholder="contrase&#241;a actual" style="width:260px">
+                   placeholder="<%= __('contraseña actual','current password') %>" style="width:260px">
           </div>
           <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:3px; margin-top:8px;">
-            <label>Nueva contrase&#241;a <span style="color:#888">(m&#237;n. 6 caracteres)</span></label>
+            <label><%= __('Nueva contraseña', 'New password') %> <span style="color:#888">(<%= __('mín. 6 caracteres','min. 6 characters') %>)</span></label>
             <input type="password" name="new_password" required
-                   placeholder="nueva contrase&#241;a" style="width:260px">
+                   placeholder="<%= __('nueva contraseña','new password') %>" style="width:260px">
           </div>
           <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:3px; margin-top:8px;">
-            <label>Confirmar nueva contrase&#241;a</label>
+            <label><%= __('Confirmar nueva contraseña', 'Confirm new password') %></label>
             <input type="password" name="confirm_password" required
-                   placeholder="repetir contrase&#241;a" style="width:260px">
+                   placeholder="<%= __('repetir contraseña','repeat password') %>" style="width:260px">
           </div>
           <div class="actions" style="margin-top:14px;">
-            <button class="btn primary" type="submit">Actualizar contrase&#241;a</button>
+            <button class="btn primary" type="submit"><%= __('Actualizar contraseña', 'Update password') %></button>
           </div>
         </form>
       </fieldset>
@@ -79,9 +105,9 @@
 
   <div class="mdi-status">
     <span class="ico">ℹ️</span>
-    Perfil de <%= user.username %> &mdash; rol: <%= user.role %>.
+    <%= __('Perfil de', 'Profile of') %> <%= user.username %> &mdash; <%= __('rol', 'role') %>: <%= user.role %>.
     <% if (currentUser.role === 'admin') { %>
-      &nbsp;&#124;&nbsp;<a href="/users" style="color:#0451A5">&#8592; Volver a User Management</a>
+      &nbsp;&#124;&nbsp;<a href="/users" style="color:#0451A5">&#8592; <%= __('Volver a User Management', 'Back to User Management') %></a>
     <% } %>
   </div>
 </div>

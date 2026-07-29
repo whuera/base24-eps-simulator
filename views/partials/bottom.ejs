@@ -7,7 +7,9 @@
          Bottom half → global routing configuration checklist
     ════════════════════════════════════════════════════════════ -->
     <%
-      const gd = (typeof guideDeps !== 'undefined' && guideDeps) ? guideDeps : {};
+      const gd   = (typeof guideDeps !== 'undefined' && guideDeps) ? guideDeps : {};
+      const isEn = (typeof lang !== 'undefined' && lang === 'en');
+      const __   = (es, en) => isEn ? en : es;
       const gKeys = ['hasInstitution','hasHost','hasPrefix','hasLimitProfile',
                      'hasDestProfile','hasDestConfig','hasRoutingProfile',
                      'hasDestSrcRel','hasCard','hasJournal'];
@@ -35,175 +37,265 @@
           <div class="guide-section-header">
             <span>📖</span>
             <% if (active === 'Institution') { %>
-              Módulo: Institución Emisora
+              <%= __('Módulo: Institución Emisora', 'Module: Institution') %>
             <% } else if (active === 'Host/Interchange') { %>
-              Módulo: Host / Interchange
+              <%= __('Módulo: Host / Interchange', 'Module: Host / Interchange') %>
             <% } else if (active === 'Prefix') { %>
-              Módulo: Prefix / BIN
+              <%= __('Módulo: Prefix / BIN', 'Module: Prefix / BIN') %>
             <% } else if (active === 'Routing') { %>
-              Módulo: Source Routing Profile
+              <%= __('Módulo: Source Routing Profile', 'Module: Source Routing Profile') %>
             <% } else if (active === 'Destination Routing Profile') { %>
-              Módulo: Dest. Routing Profile
+              <%= __('Módulo: Dest. Routing Profile', 'Module: Dest. Routing Profile') %>
             <% } else if (active === 'Routing Config Destination') { %>
-              Módulo: Route Codes de Destino
+              <%= __('Módulo: Route Codes de Destino', 'Module: Destination Route Codes') %>
             <% } else if (active === 'Dest/Src Relationship') { %>
-              Módulo: Relación Dest / Source
+              <%= __('Módulo: Relación Dest / Source', 'Module: Dest / Source Relationship') %>
             <% } else if (active === 'Limit Profiles') { %>
-              Módulo: Limit Profiles
+              Module: Limit Profiles
             <% } else if (active === 'Cards') { %>
-              Módulo: Gestión de Tarjetas
+              <%= __('Módulo: Gestión de Tarjetas', 'Module: Card Management') %>
             <% } else if (active === 'System Operations') { %>
-              Módulo: Transaction Simulator
+              Module: Transaction Simulator
             <% } else { %>
-              Bienvenido al Simulador B24-eps
+              <%= __('Bienvenido al Simulador B24-eps', 'Welcome to B24-eps Simulator') %>
             <% } %>
           </div>
 
           <div class="guide-steps">
             <% if (active === 'Institution') { %>
               <p class="guide-desc">
-                La <strong>Institución</strong> representa al banco o entidad financiera que emite tarjetas en el sistema. Es el primer dato que debes registrar, ya que todo lo demás depende de ella.
+                <% if (!isEn) { %>La <strong>Institución</strong> representa al banco o entidad financiera que emite tarjetas en el sistema. Es el primer dato que debes registrar, ya que todo lo demás depende de ella.<% } else { %>The <strong>Institution</strong> represents the bank or financial entity that issues cards in the system. It is the first record you must create, as everything else depends on it.<% } %>
               </p>
               <ol>
+                <% if (!isEn) { %>
                 <li>Ingresa un <strong>ID de institución</strong> único y corto (ej: <code>BNK1</code>, <code>PCBA_INST</code>). Este código se usa en toda la plataforma.</li>
                 <li>Completa el <strong>Nombre</strong> oficial de la entidad y selecciona el <strong>Tipo de Emisor</strong> (Institution, Host o Interchange).</li>
                 <li>Establece la <strong>Moneda</strong> (código ISO 4217, ej: <code>840</code> = USD) y la <strong>Zona Horaria</strong>.</li>
                 <li>Opcionalmente, agrega información de contacto usando el formulario de contactos.</li>
                 <li>Haz clic en <strong>Save</strong>. La institución quedará disponible para asignarla a prefijos BIN y autorizar tarjetas On-Us.</li>
+                <% } else { %>
+                <li>Enter a unique, short <strong>Institution ID</strong> (e.g., <code>BNK1</code>, <code>PCBA_INST</code>). This code is used across the entire platform.</li>
+                <li>Complete the official entity <strong>Name</strong> and select the <strong>Issuer Type</strong> (Institution, Host, or Interchange).</li>
+                <li>Set the <strong>Currency</strong> (ISO 4217 code, e.g., <code>840</code> = USD) and the <strong>Time Zone</strong>.</li>
+                <li>Optionally add contact information using the contacts form below.</li>
+                <li>Click <strong>Save</strong>. The institution will be available to assign to BIN prefixes and authorize On-Us cards.</li>
+                <% } %>
               </ol>
-              <div class="guide-tip">💡 Sin una institución registrada no es posible crear prefijos BIN ni procesar ninguna transacción. Es el punto de partida obligatorio.</div>
+              <div class="guide-tip">💡 <%= __('Sin una institución registrada no es posible crear prefijos BIN ni procesar ninguna transacción. Es el punto de partida obligatorio.', 'Without a registered institution, no BIN prefixes can be created and no transactions can be processed. It is the mandatory starting point.') %></div>
 
             <% } else if (active === 'Host/Interchange') { %>
               <p class="guide-desc">
-                Un <strong>Host</strong> o <strong>Interchange</strong> define la red externa de pagos (VISA, Mastercard) o el switch interno hacia el que se enrutan las transacciones Not-On-Us.
+                <% if (!isEn) { %>Un <strong>Host</strong> o <strong>Interchange</strong> define la red externa de pagos (VISA, Mastercard) o el switch interno hacia el que se enrutan las transacciones Not-On-Us.<% } else { %>A <strong>Host</strong> or <strong>Interchange</strong> defines the external payment network (VISA, Mastercard) or internal switch to which Not-On-Us transactions are routed.<% } %>
               </p>
               <ol>
+                <% if (!isEn) { %>
                 <li>Ingresa un <strong>nombre de interfaz</strong> único (ej: <code>VISA_BASE1</code>, <code>STAR_HOST</code>). Es el identificador interno del destino.</li>
                 <li>Selecciona el <strong>Tipo</strong>:<br>— <em>Interchange</em>: red externa de pagos (VISA, MC)<br>— <em>Host</em>: switch o autorizador interno</li>
                 <li>Asigna el <strong>Source Routing Profile</strong> que dictará las reglas de enrutamiento desde este host hacia destinos específicos.</li>
                 <li>Configura los perfiles de transacciones y campos ISO opcionales si lo requiere el entorno.</li>
                 <li>Haz clic en <strong>Save</strong>. Este host estará disponible para recibir transacciones cuando el motor de ruteo lo seleccione.</li>
+                <% } else { %>
+                <li>Enter a unique <strong>Interface Name</strong> (e.g., <code>VISA_BASE1</code>, <code>STAR_HOST</code>). This is the internal identifier for the destination.</li>
+                <li>Select the <strong>Type</strong>:<br>— <em>Interchange</em>: external payment network (VISA, MC)<br>— <em>Host</em>: internal switch or authorizer</li>
+                <li>Assign the <strong>Source Routing Profile</strong> that will dictate the routing rules from this host to specific destinations.</li>
+                <li>Configure transaction profiles and optional ISO fields if required by the environment.</li>
+                <li>Click <strong>Save</strong>. This host will be available to receive transactions when the routing engine selects it.</li>
+                <% } %>
               </ol>
-              <div class="guide-tip">💡 El campo <em>Source Routing Profile</em> del Host es clave: contiene la lista ordenada de destinos posibles. Sin él, las transacciones Not-On-Us no tienen adónde ir.</div>
+              <div class="guide-tip">💡 <%= __('El campo Source Routing Profile del Host es clave: contiene la lista ordenada de destinos posibles. Sin él, las transacciones Not-On-Us no tienen adónde ir.', 'The Source Routing Profile field on the Host is critical: it contains the ordered list of possible destinations. Without it, Not-On-Us transactions have nowhere to go.') %></div>
 
             <% } else if (active === 'Prefix') { %>
               <p class="guide-desc">
-                El <strong>Prefix (BIN)</strong> vincula los primeros dígitos de una tarjeta con la institución que la emite y define cómo se debe enrutar cada transacción.
+                <% if (!isEn) { %>El <strong>Prefix (BIN)</strong> vincula los primeros dígitos de una tarjeta con la institución que la emite y define cómo se debe enrutar cada transacción.<% } else { %>The <strong>Prefix (BIN)</strong> links the first digits of a card to the issuing institution and defines how each transaction should be routed.<% } %>
               </p>
               <ol>
+                <% if (!isEn) { %>
                 <li>Ingresa el <strong>Prefijo BIN</strong>: los primeros 6 dígitos del número de tarjeta (ej: <code>160107</code> para tarjetas que comienzan con esos dígitos).</li>
                 <li>Selecciona la <strong>Institución Emisora</strong> (Issuer ID) a la que pertenecen estas tarjetas.</li>
                 <li>Define el <strong>Tipo de Prefijo</strong>:<br>— <em>On-Us</em>: tarjeta de tu banco → autorización interna (IAUT), sin red externa<br>— <em>Not-On-Us</em>: tarjeta de otro banco → se enruta hacia una red externa</li>
                 <li>Si es <em>Not-On-Us</em>, elige el <strong>Tipo de Ruteo</strong>:<br>— <em>Acquirer &amp; Issuer</em>: evalúa el Source Routing Profile del Host adquirente<br>— <em>Issuer Only</em>: va directamente al Destination Routing Profile definido en el prefijo</li>
                 <li>Configura el <strong>máximo de reintentos PIN</strong> (default: 3) y haz clic en <strong>Save</strong>.</li>
+                <% } else { %>
+                <li>Enter the <strong>BIN Prefix</strong>: the first 6 digits of the card number (e.g., <code>160107</code> for cards starting with those digits).</li>
+                <li>Select the <strong>Issuing Institution</strong> (Issuer ID) to which these cards belong.</li>
+                <li>Define the <strong>Prefix Type</strong>:<br>— <em>On-Us</em>: your bank's card → internal authorization (IAUT), no external network<br>— <em>Not-On-Us</em>: another bank's card → routed to an external network</li>
+                <li>If <em>Not-On-Us</em>, choose the <strong>Route Type</strong>:<br>— <em>Acquirer &amp; Issuer</em>: evaluates the acquiring Host's Source Routing Profile<br>— <em>Issuer Only</em>: goes directly to the Destination Routing Profile on the prefix</li>
+                <li>Set the <strong>max PIN retry count</strong> (default: 3) and click <strong>Save</strong>.</li>
+                <% } %>
               </ol>
-              <div class="guide-tip">💡 El prefijo es la "llave" que determina todo el flujo: si la tarjeta es de tu banco (On-Us) o no, y cómo enrutarla. Cada prefijo debe estar vinculado a una institución existente.</div>
+              <div class="guide-tip">💡 <%= __('El prefijo es la "llave" que determina todo el flujo: si la tarjeta es de tu banco (On-Us) o no, y cómo enrutarla. Cada prefijo debe estar vinculado a una institución existente.', 'The prefix is the "key" that determines the entire flow: whether the card is On-Us or not, and how to route it. Each prefix must be linked to an existing institution.') %></div>
 
             <% } else if (active === 'Routing') { %>
               <p class="guide-desc">
-                El <strong>Source Routing Profile</strong> contiene las reglas de decisión que determinan hacia qué destino externo se enruta una transacción Not-On-Us con tipo de ruteo <em>Acquirer &amp; Issuer</em>.
+                <% if (!isEn) { %>El <strong>Source Routing Profile</strong> contiene las reglas de decisión que determinan hacia qué destino externo se enruta una transacción Not-On-Us con tipo de ruteo <em>Acquirer &amp; Issuer</em>.<% } else { %>The <strong>Source Routing Profile</strong> contains the decision rules that determine which external destination a Not-On-Us transaction with <em>Acquirer &amp; Issuer</em> routing type is sent to.<% } %>
               </p>
               <ol>
+                <% if (!isEn) { %>
                 <li>Crea o selecciona un <strong>Source Routing Profile</strong> (ej: <code>STAR_SRC</code>). El nombre debe ser único.</li>
                 <li>Agrega <strong>destinos en orden de prioridad</strong> (Seq 1, 2, 3...). El orden importa: el primero en coincidir gana y los demás son ignorados.</li>
                 <li>Por cada destino, define los <strong>criterios de coincidencia</strong> (dejar vacío = cualquier valor):<br>— <em>Issuer ID</em>: solo si el emisor de la tarjeta es este<br>— <em>Txn Code</em>: tipo de transacción (W=Retiro, P=Compra, B=Saldo, T=Transfer)<br>— <em>Instrument</em>: ATM, POS, Interchange, o Cualquiera</li>
                 <li>Asigna a cada destino un <strong>Destination Routing Profile</strong> y un <strong>Limit Profile</strong>.</li>
                 <li>Haz clic en <strong>Save</strong>. El motor evaluará estos destinos en orden secuencial en cada transacción.</li>
+                <% } else { %>
+                <li>Create or select a <strong>Source Routing Profile</strong> (e.g., <code>STAR_SRC</code>). The name must be unique.</li>
+                <li>Add <strong>destinations in priority order</strong> (Seq 1, 2, 3...). Order matters: the first match wins and the rest are ignored.</li>
+                <li>For each destination, define <strong>matching criteria</strong> (leave blank = any value):<br>— <em>Issuer ID</em>: only if the card issuer matches this<br>— <em>Txn Code</em>: transaction type (W=Withdrawal, P=Purchase, B=Balance, T=Transfer)<br>— <em>Instrument</em>: ATM, POS, Interchange, or Any</li>
+                <li>Assign a <strong>Destination Routing Profile</strong> and a <strong>Limit Profile</strong> to each destination.</li>
+                <li>Click <strong>Save</strong>. The engine will evaluate these destinations sequentially on each transaction.</li>
+                <% } %>
               </ol>
-              <div class="guide-tip">💡 El primer destino que cumpla <em>todos</em> los criterios activos es el seleccionado. Si ninguno coincide, la transacción puede ser rechazada con AC-91 (host inoperativo).</div>
+              <div class="guide-tip">💡 <%= __('El primer destino que cumpla todos los criterios activos es el seleccionado. Si ninguno coincide, la transacción puede ser rechazada con AC-91 (host inoperativo).', 'The first destination meeting ALL active criteria is selected. If none matches, the transaction may be rejected with AC-91 (host inoperative).') %></div>
 
             <% } else if (active === 'Destination Routing Profile') { %>
               <p class="guide-desc">
-                El <strong>Destination Routing Profile</strong> configura el comportamiento del host externo al que se envía la transacción: límites de piso, auditoría y acciones ante diferentes montos.
+                <% if (!isEn) { %>El <strong>Destination Routing Profile</strong> configura el comportamiento del host externo al que se envía la transacción: límites de piso, auditoría y acciones ante diferentes montos.<% } else { %>The <strong>Destination Routing Profile</strong> configures the behavior of the external destination host: floor limits, auditing, and actions for different transaction amounts.<% } %>
               </p>
               <ol>
+                <% if (!isEn) { %>
                 <li>Ingresa el <strong>nombre del perfil de destino</strong> (ej: <code>VISA_DEST_01</code>). Debe ser único en el sistema.</li>
                 <li>Define el <strong>Floor Limit</strong> (límite de piso): monto a partir del cual se requiere autorización en línea obligatoria. Por debajo de este monto puede aprobarse offline.</li>
                 <li>Configura la <strong>acción para montos por encima</strong> del Floor Limit: Approve, Decline o Referral.</li>
                 <li>Configura la <strong>acción para montos por debajo</strong> del Floor Limit.</li>
                 <li>Activa <strong>Transaction Auditing</strong> si necesitas registro de auditoría completo, y guarda.</li>
+                <% } else { %>
+                <li>Enter a unique <strong>destination profile name</strong> (e.g., <code>VISA_DEST_01</code>).</li>
+                <li>Set the <strong>Floor Limit</strong>: the minimum amount that requires mandatory online authorization. Below this amount, approval may be granted offline.</li>
+                <li>Configure the <strong>action for amounts above</strong> the Floor Limit: Approve, Decline, or Referral.</li>
+                <li>Configure the <strong>action for amounts below</strong> the Floor Limit.</li>
+                <li>Enable <strong>Transaction Auditing</strong> for a complete audit trail, then save.</li>
+                <% } %>
               </ol>
-              <div class="guide-tip">💡 Un Floor Limit de <code>$0.00</code> significa que <em>toda</em> transacción requiere autorización en línea. Es el valor más seguro y el recomendado para entornos de prueba.</div>
+              <div class="guide-tip">💡 <%= __('Un Floor Limit de $0.00 significa que toda transacción requiere autorización en línea. Es el valor más seguro y el recomendado para entornos de prueba.', 'A Floor Limit of $0.00 means every transaction requires online authorization. This is the safest setting and the recommended value for test environments.') %></div>
 
             <% } else if (active === 'Routing Config Destination') { %>
               <p class="guide-desc">
-                La <strong>Configuración de Destino</strong> asigna los tipos de transacción permitidos para un Destination Routing Profile y define qué cuenta y método de autenticación se usa en cada caso.
+                <% if (!isEn) { %>La <strong>Configuración de Destino</strong> asigna los tipos de transacción permitidos para un Destination Routing Profile y define qué cuenta y método de autenticación se usa en cada caso.<% } else { %>The <strong>Destination Configuration</strong> assigns the allowed transaction types for a Destination Routing Profile and defines which account and authentication method is used for each one.<% } %>
               </p>
               <ol>
+                <% if (!isEn) { %>
                 <li>Selecciona el <strong>Destination Routing Profile</strong> a configurar (debe existir previamente en el sistema).</li>
                 <li>Agrega una <strong>fila por tipo de transacción</strong> (Route Code):<br><code>PUR</code>=Compra &nbsp;|&nbsp; <code>WDL</code>=Retiro &nbsp;|&nbsp; <code>INQ</code>=Saldo<br><code>XFER</code>=Transferencia &nbsp;|&nbsp; <code>RTRN</code>=Devolución</li>
                 <li>Por cada fila, selecciona el <strong>Tipo de Cuenta 1</strong>: Savings, Checking, Credit o Default.</li>
                 <li>Define el <strong>Método de Autenticación</strong>: PIN, Signature, Online PIN o None.</li>
                 <li>Haz clic en <strong>Save</strong>. Esta configuración vincula cada tipo de transacción con la cuenta y autenticación correctas.</li>
+                <% } else { %>
+                <li>Select the <strong>Destination Routing Profile</strong> to configure (it must already exist in the system).</li>
+                <li>Add one <strong>row per transaction type</strong> (Route Code):<br><code>PUR</code>=Purchase &nbsp;|&nbsp; <code>WDL</code>=Withdrawal &nbsp;|&nbsp; <code>INQ</code>=Balance Inquiry<br><code>XFER</code>=Transfer &nbsp;|&nbsp; <code>RTRN</code>=Return</li>
+                <li>For each row, select <strong>Account Type 1</strong>: Savings, Checking, Credit, or Default.</li>
+                <li>Define the <strong>Authentication Method</strong>: PIN, Signature, Online PIN, or None.</li>
+                <li>Click <strong>Save</strong>. This maps each transaction type to the correct account and authentication.</li>
+                <% } %>
               </ol>
-              <div class="guide-tip">💡 Sin Route Codes configurados, el Destination Routing Profile no sabrá cómo manejar los tipos de transacción entrantes. Configura al menos el tipo de transacción que vayas a probar.</div>
+              <div class="guide-tip">💡 <%= __('Sin Route Codes configurados, el Destination Routing Profile no sabrá cómo manejar los tipos de transacción entrantes. Configura al menos el tipo de transacción que vayas a probar.', 'Without Route Codes configured, the Destination Routing Profile won\'t know how to handle incoming transaction types. Configure at least the type you plan to test.') %></div>
 
             <% } else if (active === 'Dest/Src Relationship') { %>
               <p class="guide-desc">
-                La <strong>Relación Dest/Source</strong> establece cuáles Source Routing Profiles tienen autorización para enviar transacciones hacia un Destination Routing Profile específico.
+                <% if (!isEn) { %>La <strong>Relación Dest/Source</strong> establece cuáles Source Routing Profiles tienen autorización para enviar transacciones hacia un Destination Routing Profile específico.<% } else { %>The <strong>Dest/Source Relationship</strong> establishes which Source Routing Profiles are authorized to send transactions to a specific Destination Routing Profile.<% } %>
               </p>
               <ol>
+                <% if (!isEn) { %>
                 <li>Selecciona el <strong>Destination Routing Profile</strong> destino (ej: <code>VISA_DEST_01</code>).</li>
                 <li>Agrega una <strong>relación</strong> por cada Source Profile autorizado para usar este destino.</li>
                 <li>Especifica el <strong>Transaction Code</strong> ISO al que aplica (<code>**</code> = cualquier tipo de transacción).</li>
                 <li>Define el <strong>Route Code</strong> resultante que se asignará internamente: RTRN, PUR, WDL, INQ o XFER.</li>
                 <li>Guarda. Esta tabla cierra el ciclo completo: Source Profile → Destino → Route Code → Cuenta / Autenticación.</li>
+                <% } else { %>
+                <li>Select the destination <strong>Destination Routing Profile</strong> (e.g., <code>VISA_DEST_01</code>).</li>
+                <li>Add one <strong>relationship</strong> per Source Profile authorized to use this destination.</li>
+                <li>Specify the applicable ISO <strong>Transaction Code</strong> (<code>**</code> = any transaction type).</li>
+                <li>Define the resulting <strong>Route Code</strong> to be assigned internally: RTRN, PUR, WDL, INQ, or XFER.</li>
+                <li>Save. This table completes the full cycle: Source Profile → Destination → Route Code → Account / Auth.</li>
+                <% } %>
               </ol>
-              <div class="guide-tip">💡 Esta relación es el "puente" final del ciclo de ruteo. Sin ella, el Destination Routing Profile no reconocerá las transacciones provenientes del Source Profile.</div>
+              <div class="guide-tip">💡 <%= __('Esta relación es el "puente" final del ciclo de ruteo. Sin ella, el Destination Routing Profile no reconocerá las transacciones provenientes del Source Profile.', 'This relationship is the final "bridge" in the routing cycle. Without it, the Destination Routing Profile won\'t recognize transactions from the Source Profile.') %></div>
 
             <% } else if (active === 'Limit Profiles') { %>
               <p class="guide-desc">
-                Los <strong>Limit Profiles</strong> definen los topes de gasto aplicables a una tarjeta o a un destino de ruteo: monto máximo por transacción, límite diario y número de operaciones por día.
+                <% if (!isEn) { %>Los <strong>Limit Profiles</strong> definen los topes de gasto aplicables a una tarjeta o a un destino de ruteo: monto máximo por transacción, límite diario y número de operaciones por día.<% } else { %><strong>Limit Profiles</strong> define the spending caps applicable to a card or routing destination: max amount per transaction, daily limit, and maximum operations per day.<% } %>
               </p>
               <ol>
+                <% if (!isEn) { %>
                 <li>Ingresa el <strong>nombre del perfil</strong> (ej: <code>LMT_STD</code> para estándar, <code>LMT_VIP</code> para alto valor).</li>
                 <li>Define el <strong>Monto Mínimo por Transacción</strong>: bloquea pagos demasiado pequeños (ej: <code>$1.00</code>). Transacciones por debajo → AC-05.</li>
                 <li>Define el <strong>Monto Máximo por Transacción</strong>: techo para una sola operación (ej: <code>$500</code>). Si se excede → AC-61.</li>
                 <li>Define el <strong>Límite Diario de Monto</strong>: suma acumulada permitida en un día (ej: <code>$2,000</code>). Si se excede → AC-61.</li>
                 <li>Define el <strong>Límite de Transacciones por Día</strong>: máximo de operaciones (ej: <code>10</code>). Si se excede → AC-65. Luego guarda.</li>
+                <% } else { %>
+                <li>Enter the <strong>profile name</strong> (e.g., <code>LMT_STD</code> for standard, <code>LMT_VIP</code> for high-value).</li>
+                <li>Define the <strong>Minimum Amount per Transaction</strong>: blocks excessively small payments (e.g., <code>$1.00</code>). Below minimum → AC-05.</li>
+                <li>Define the <strong>Maximum Amount per Transaction</strong>: ceiling for a single operation (e.g., <code>$500</code>). If exceeded → AC-61.</li>
+                <li>Define the <strong>Daily Amount Limit</strong>: total cumulative amount allowed per day (e.g., <code>$2,000</code>). If exceeded → AC-61.</li>
+                <li>Define the <strong>Daily Transaction Count Limit</strong>: max operations per day (e.g., <code>10</code>). If exceeded → AC-65. Then save.</li>
+                <% } %>
               </ol>
-              <div class="guide-tip">💡 Asigna perfiles de límites diferenciados según el segmento de cliente: estándar para cuentas normales, VIP para cuentas premium, e internacional para transacciones en el extranjero.</div>
+              <div class="guide-tip">💡 <%= __('Asigna perfiles de límites diferenciados según el segmento de cliente: estándar para cuentas normales, VIP para cuentas premium, e internacional para transacciones en el extranjero.', 'Assign differentiated limit profiles by customer segment: standard for regular accounts, VIP for premium accounts, and international for cross-border transactions.') %></div>
 
             <% } else if (active === 'Cards') { %>
               <p class="guide-desc">
-                El módulo de <strong>Tarjetas</strong> permite crear y administrar las tarjetas On-Us (emitidas por tu institución) disponibles para probar el motor de autorización.
+                <% if (!isEn) { %>El módulo de <strong>Tarjetas</strong> permite crear y administrar las tarjetas On-Us (emitidas por tu institución) disponibles para probar el motor de autorización.<% } else { %>The <strong>Cards</strong> module lets you create and manage On-Us cards (issued by your institution) available for testing the authorization engine.<% } %>
               </p>
               <ol>
+                <% if (!isEn) { %>
                 <li>El <strong>PAN</strong> (número de tarjeta) debe comenzar con un prefijo <em>On-Us</em> configurado previamente (ej: <code>1601070000001234</code> para el prefijo <code>160107</code>).</li>
                 <li>Selecciona la <strong>Institución Emisora</strong> (debe coincidir con la del prefijo) y el <strong>Limit Profile</strong> que controlará los topes de gasto.</li>
                 <li>Define el <strong>Estado</strong> de la tarjeta:<br>— Active → se autoriza normalmente<br>— Blocked → rechazo AC-05 (Do Not Honor)<br>— Lost → rechazo AC-41 (Pick Up)<br>— Expired → rechazo AC-54</li>
                 <li>Agrega al menos una <strong>Cuenta</strong> asociada con saldo disponible para probar retiros y compras.</li>
                 <li>Guarda. Esta tarjeta ya está disponible para ser usada en el Transaction Simulator.</li>
+                <% } else { %>
+                <li>The <strong>PAN</strong> must start with a previously configured <em>On-Us</em> prefix (e.g., <code>1601070000001234</code> for prefix <code>160107</code>).</li>
+                <li>Select the <strong>Issuing Institution</strong> (must match the prefix) and the <strong>Limit Profile</strong> controlling spending caps.</li>
+                <li>Define the card <strong>Status</strong>:<br>— Active → authorized normally<br>— Blocked → reject AC-05 (Do Not Honor)<br>— Lost → reject AC-41 (Pick Up)<br>— Expired → reject AC-54</li>
+                <li>Add at least one associated <strong>Account</strong> with available balance to test withdrawals and purchases.</li>
+                <li>Save. This card is now ready to be used in the Transaction Simulator.</li>
+                <% } %>
               </ol>
-              <div class="guide-tip">💡 Crea tarjetas con diferentes estados (Blocked, Lost, Expired) para verificar que el motor de autorización genera los Action Codes correctos en cada escenario de rechazo.</div>
+              <div class="guide-tip">💡 <%= __('Crea tarjetas con diferentes estados (Blocked, Lost, Expired) para verificar que el motor de autorización genera los Action Codes correctos en cada escenario de rechazo.', 'Create cards with different statuses (Blocked, Lost, Expired) to verify the authorization engine generates the correct Action Codes in each rejection scenario.') %></div>
 
             <% } else if (active === 'System Operations') { %>
               <p class="guide-desc">
-                El <strong>Transaction Simulator</strong> ejecuta el flujo completo de autorización tal como ocurre en producción con ACI BASE24-eps, siguiendo cada etapa del motor de procesamiento.
+                <% if (!isEn) { %>El <strong>Transaction Simulator</strong> ejecuta el flujo completo de autorización tal como ocurre en producción con ACI BASE24-eps, siguiendo cada etapa del motor de procesamiento.<% } else { %>The <strong>Transaction Simulator</strong> executes the complete authorization flow exactly as it occurs in production with ACI BASE24-eps, following each stage of the processing engine.<% } %>
               </p>
               <ol>
+                <% if (!isEn) { %>
                 <li>Ingresa el <strong>F2 PAN</strong>: número de tarjeta a probar (On-Us o Not-On-Us).</li>
                 <li>Define el <strong>F4 Monto</strong> en USD (respeta los límites del Limit Profile asignado).</li>
                 <li>Selecciona el <strong>F3 Processing Code</strong>: Withdrawal, Purchase, Balance Inquiry, Transfer o Reversal.</li>
                 <li>Elige el <strong>F41 Source</strong> (origen de la terminal): ATM, POS o Interchange.</li>
                 <li>Haz clic en <strong>Authorize</strong>. El motor ejecuta en orden:<br><code>PRFX</code> → <code>INST</code> → <code>ISS/CARD</code> → <code>RTR</code> → <code>LIM</code> → <code>AUT</code> → <code>JRNL</code></li>
                 <li>Analiza el <strong>F39 Action Code</strong> y el log de pasos para entender la decisión de cada etapa del motor.</li>
+                <% } else { %>
+                <li>Enter the <strong>F2 PAN</strong>: card number to test (On-Us or Not-On-Us).</li>
+                <li>Define the <strong>F4 Amount</strong> in USD (respect the limits set by the assigned Limit Profile).</li>
+                <li>Select the <strong>F3 Processing Code</strong>: Withdrawal, Purchase, Balance Inquiry, Transfer, or Reversal.</li>
+                <li>Choose the <strong>F41 Source</strong> (terminal origin): ATM, POS, or Interchange.</li>
+                <li>Click <strong>Authorize</strong>. The engine runs in order:<br><code>PRFX</code> → <code>INST</code> → <code>ISS/CARD</code> → <code>RTR</code> → <code>LIM</code> → <code>AUT</code> → <code>JRNL</code></li>
+                <li>Analyze the <strong>F39 Action Code</strong> and the step log to understand the engine's decision at each stage.</li>
+                <% } %>
               </ol>
-              <div class="guide-tip">💡 <strong>AC-00</strong> = Aprobado. Cualquier otro código indica el motivo específico del rechazo. El log de pasos PRFX→JRNL muestra exactamente en qué etapa falló y por qué.</div>
+              <div class="guide-tip">💡 <strong>AC-00</strong> = <%= __('Aprobado', 'Approved') %>. <%= __('Cualquier otro código indica el motivo específico del rechazo. El log PRFX→JRNL muestra exactamente en qué etapa falló y por qué.', 'Any other code indicates the specific rejection reason. The PRFX→JRNL step log shows exactly which stage failed and why.') %></div>
 
             <% } else { %>
               <p class="guide-desc">
-                Bienvenido al simulador educativo de <strong>ACI BASE24-eps</strong>. Esta plataforma replica el flujo real de autorización y ruteo de transacciones. Sigue el orden de configuración para llegar a ejecutar una transacción completa.
+                <% if (!isEn) { %>Bienvenido al simulador educativo de <strong>ACI BASE24-eps</strong>. Esta plataforma replica el flujo real de autorización y ruteo de transacciones. Sigue el orden de configuración para ejecutar una transacción completa.<% } else { %>Welcome to the <strong>ACI BASE24-eps</strong> educational simulator. This platform replicates the real transaction authorization and routing flow. Follow the configuration order to execute a complete transaction.<% } %>
               </p>
               <ol>
+                <% if (!isEn) { %>
                 <li>Comienza por <strong>Institution</strong>: registra tu banco o entidad emisora.</li>
                 <li>Crea un <strong>Host / Interchange</strong>: la red externa de pago (ej: VISA).</li>
                 <li>Configura los <strong>Prefijos BIN</strong> para vincular tarjetas con instituciones.</li>
                 <li>Define los <strong>Limit Profiles</strong> con los topes de gasto por tarjeta.</li>
                 <li>Completa el flujo de <strong>Routing</strong>: Destination Profile → Route Codes → Source Profile → Relaciones.</li>
                 <li>Crea una <strong>Tarjeta</strong> de prueba y ejecútala en el <strong>Simulator</strong>.</li>
+                <% } else { %>
+                <li>Start with <strong>Institution</strong>: register your bank or issuing entity.</li>
+                <li>Create a <strong>Host / Interchange</strong>: the external payment network (e.g., VISA).</li>
+                <li>Configure <strong>BIN Prefixes</strong> to link cards to institutions.</li>
+                <li>Define <strong>Limit Profiles</strong> with spending caps per card.</li>
+                <li>Complete the <strong>Routing</strong> flow: Destination Profile → Route Codes → Source Profile → Relationships.</li>
+                <li>Create a test <strong>Card</strong> and run it through the <strong>Simulator</strong>.</li>
+                <% } %>
               </ol>
-              <div class="guide-tip">💡 Sigue el checklist de progreso en la parte inferior de este panel para completar cada paso en el orden correcto.</div>
+              <div class="guide-tip">💡 <%= __('Sigue el checklist de progreso en la parte inferior de este panel para completar cada paso en el orden correcto.', 'Follow the progress checklist in the lower part of this panel to complete each step in the correct order.') %></div>
             <% } %>
           </div><!-- /guide-steps -->
         </div><!-- /guide-tutorial -->
@@ -215,59 +307,59 @@
         ──────────────────────────────────────────────────── -->
         <div class="guide-section guide-checklist">
           <div class="guide-section-header">
-            <span>🗺️</span> Ruta de Configuración
+            <span>🗺️</span> <%= __('Ruta de Configuración', 'Configuration Roadmap') %>
           </div>
 
           <div class="guide-steps">
-            <p class="guide-desc">Pasos para configurar y ejecutar un ruteo completo de transacción:</p>
+            <p class="guide-desc"><%= __('Pasos para configurar y ejecutar un ruteo completo de transacción:', 'Steps to configure and execute a complete transaction routing:') %></p>
 
             <ul class="guide-check-list">
               <li class="<%= gd.hasInstitution ? 'done' : '' %>">
                 <span class="chk"><%= gd.hasInstitution ? '✓' : '○' %></span>
-                <span><a href="/institution">Crear Institución Emisora</a><% if (!gd.hasInstitution) { %><span class="chk-hint"><br>— registra tu banco</span><% } %></span>
+                <span><a href="/institution"><%= __('Crear Institución Emisora', 'Create Issuing Institution') %></a><% if (!gd.hasInstitution) { %><span class="chk-hint"><br>— <%= __('registra tu banco', 'register your bank') %></span><% } %></span>
               </li>
               <li class="<%= gd.hasHost ? 'done' : '' %>">
                 <span class="chk"><%= gd.hasHost ? '✓' : '○' %></span>
-                <span><a href="/host">Crear Host / Interchange</a><% if (!gd.hasHost) { %><span class="chk-hint"><br>— red de pago externa</span><% } %></span>
+                <span><a href="/host"><%= __('Crear Host / Interchange', 'Create Host / Interchange') %></a><% if (!gd.hasHost) { %><span class="chk-hint"><br>— <%= __('red de pago externa', 'external payment network') %></span><% } %></span>
               </li>
               <li class="<%= gd.hasPrefix ? 'done' : '' %>">
                 <span class="chk"><%= gd.hasPrefix ? '✓' : '○' %></span>
-                <span><a href="/prefix">Configurar Prefix (BIN)</a><% if (!gd.hasPrefix) { %><span class="chk-hint"><br>— vincula tarjetas al emisor</span><% } %></span>
+                <span><a href="/prefix"><%= __('Configurar Prefix (BIN)', 'Configure Prefix (BIN)') %></a><% if (!gd.hasPrefix) { %><span class="chk-hint"><br>— <%= __('vincula tarjetas al emisor', 'link cards to issuer') %></span><% } %></span>
               </li>
               <li class="<%= gd.hasLimitProfile ? 'done' : '' %>">
                 <span class="chk"><%= gd.hasLimitProfile ? '✓' : '○' %></span>
-                <span><a href="/limit">Crear Limit Profile</a><% if (!gd.hasLimitProfile) { %><span class="chk-hint"><br>— define límites de gasto</span><% } %></span>
+                <span><a href="/limit"><%= __('Crear Limit Profile', 'Create Limit Profile') %></a><% if (!gd.hasLimitProfile) { %><span class="chk-hint"><br>— <%= __('define límites de gasto', 'define spending caps') %></span><% } %></span>
               </li>
               <li class="<%= gd.hasDestProfile ? 'done' : '' %>">
                 <span class="chk"><%= gd.hasDestProfile ? '✓' : '○' %></span>
-                <span><a href="/routing/dest-profile">Destination Routing Profile</a><% if (!gd.hasDestProfile) { %><span class="chk-hint"><br>— configura el host externo</span><% } %></span>
+                <span><a href="/routing/dest-profile">Destination Routing Profile</a><% if (!gd.hasDestProfile) { %><span class="chk-hint"><br>— <%= __('configura el host externo', 'configure the external host') %></span><% } %></span>
               </li>
               <li class="<%= gd.hasDestConfig ? 'done' : '' %>">
                 <span class="chk"><%= gd.hasDestConfig ? '✓' : '○' %></span>
-                <span><a href="/routing/destination-config">Route Codes de Destino</a><% if (!gd.hasDestConfig) { %><span class="chk-hint"><br>— tipos de txn permitidos</span><% } %></span>
+                <span><a href="/routing/destination-config"><%= __('Route Codes de Destino', 'Destination Route Codes') %></a><% if (!gd.hasDestConfig) { %><span class="chk-hint"><br>— <%= __('tipos de txn permitidos', 'allowed transaction types') %></span><% } %></span>
               </li>
               <li class="<%= gd.hasRoutingProfile ? 'done' : '' %>">
                 <span class="chk"><%= gd.hasRoutingProfile ? '✓' : '○' %></span>
-                <span><a href="/routing">Source Routing Profile</a><% if (!gd.hasRoutingProfile) { %><span class="chk-hint"><br>— reglas de decisión de ruteo</span><% } %></span>
+                <span><a href="/routing">Source Routing Profile</a><% if (!gd.hasRoutingProfile) { %><span class="chk-hint"><br>— <%= __('reglas de decisión de ruteo', 'routing decision rules') %></span><% } %></span>
               </li>
               <li class="<%= gd.hasDestSrcRel ? 'done' : '' %>">
                 <span class="chk"><%= gd.hasDestSrcRel ? '✓' : '○' %></span>
-                <span><a href="/routing/dest-src">Relación Dest / Source</a><% if (!gd.hasDestSrcRel) { %><span class="chk-hint"><br>— cierra el ciclo de ruteo</span><% } %></span>
+                <span><a href="/routing/dest-src"><%= __('Relación Dest / Source', 'Dest / Source Relationship') %></a><% if (!gd.hasDestSrcRel) { %><span class="chk-hint"><br>— <%= __('cierra el ciclo de ruteo', 'closes the routing cycle') %></span><% } %></span>
               </li>
               <li class="<%= gd.hasCard ? 'done' : '' %>">
                 <span class="chk"><%= gd.hasCard ? '✓' : '○' %></span>
-                <span><a href="/cards">Crear Tarjeta de Prueba</a><% if (!gd.hasCard) { %><span class="chk-hint"><br>— tarjeta On-Us activa</span><% } %></span>
+                <span><a href="/cards"><%= __('Crear Tarjeta de Prueba', 'Create Test Card') %></a><% if (!gd.hasCard) { %><span class="chk-hint"><br>— <%= __('tarjeta On-Us activa', 'active On-Us card') %></span><% } %></span>
               </li>
               <li class="<%= gd.hasJournal ? 'done' : '' %>">
                 <span class="chk"><%= gd.hasJournal ? '✓' : '○' %></span>
-                <span><a href="/simulator">Ejecutar Transacción</a><% if (!gd.hasJournal) { %><span class="chk-hint"><br>— prueba el flujo completo</span><% } %></span>
+                <span><a href="/simulator"><%= __('Ejecutar Transacción', 'Run Transaction') %></a><% if (!gd.hasJournal) { %><span class="chk-hint"><br>— <%= __('prueba el flujo completo', 'test the complete flow') %></span><% } %></span>
               </li>
             </ul>
 
             <div class="guide-progress-bar-wrap">
               <div class="guide-progress-bar" style="width:<%= gPct %>%"></div>
             </div>
-            <div class="guide-progress-label"><%= gCompleted %>/<%= gTotal %> pasos completados (<%= gPct %>%)</div>
+            <div class="guide-progress-label"><%= gCompleted %>/<%= gTotal %> <%= __('pasos completados', 'steps completed') %> (<%= gPct %>%)</div>
           </div><!-- /guide-steps -->
         </div><!-- /guide-checklist -->
 

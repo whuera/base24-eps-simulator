@@ -39,6 +39,7 @@ app.use(session({
 // ─── Locals ──────────────────────────────────────────────────────────────────
 app.use((req, res, next) => {
   res.locals.currentUser = req.session.user || null;
+  res.locals.lang = req.session.lang || 'es';
   next();
 });
 
@@ -739,6 +740,11 @@ app.post('/profile/password', async (req, res) => {
     await db.run('UPDATE users SET password_hash=$1 WHERE id=$2', [hash, user.id]);
     renderProfile(null, 'Contraseña actualizada correctamente.');
   } catch (err) { res.status(500).send(err.message); }
+});
+
+app.post('/profile/lang', requireAuth, (req, res) => {
+  req.session.lang = req.body.lang === 'en' ? 'en' : 'es';
+  req.session.save(() => res.redirect('/profile'));
 });
 
 // ─── User Management (admin only) ────────────────────────────────────────────
